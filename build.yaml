@@ -1,0 +1,66 @@
+---
+- hosts: openstack
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/prepare-openstack.yml
+      when:
+        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+        - arch == "x86_64"
+
+- hosts: beaker
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/prepare-beaker.yml
+      when:
+        - cloud_platform == "aws"
+        - arch == "aarch64"
+
+- hosts: builder
+  tasks:
+    - include_tasks: tasks/create-qcow2.yml
+      when:
+        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+
+- hosts: openstack
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/clean-openstack.yml
+      when:
+        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+        - arch == "x86_64"
+
+- hosts: beaker
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/clean-beaker.yml
+      when:
+        - cloud_platform == "aws"
+        - arch == "aarch64"
+
+- hosts: aws
+  gather_facts: yes
+  become: no
+  tasks:
+    - include_tasks: tasks/upload-aws.yml
+      when:
+        - cloud_platform == "aws"
+
+- hosts: openstack
+  gather_facts: yes
+  become: no
+  tasks:
+    - include_tasks: tasks/upload-openstack.yml
+      when:
+        - cloud_platform == "openstack"
+
+- hosts: esxi
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/build-esxi.yml
+      when:
+        - cloud_platform == "esxi"

@@ -1,0 +1,41 @@
+[esxi]
+localhost
+
+[aws]
+localhost
+
+[azure]
+localhost
+
+[openstack]
+localhost
+
+[beaker]
+localhost
+
+[builder]
+
+[dder]
+
+[cloud:children]
+esxi
+aws
+azure
+openstack
+beaker
+
+[cloud:vars]
+ansible_connection=local
+
+[builder:vars]
+ansible_user=fedora
+ansible_private_key_file="{{ playbook_dir }}/key/identity"
+ansible_ssh_common_args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+[dder:vars]
+ansible_user=fedora
+ansible_private_key_file="{{ playbook_dir }}/key/identity"
+ansible_ssh_common_args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

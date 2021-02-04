@@ -26,7 +26,7 @@ kite-image will build/update images for different cloud platforms weekly.
 
 Build ESXi image with:
 
-    ansible-playbook -v -i inventory -e esxi_firmware=<bios or efi> -e cloud_platform=esxi build.yaml
+    ansible-playbook -v -i inventory -e cloud_platform=esxi build.yaml
 
 Build AWS EC2 AMI image with:
 
@@ -63,6 +63,8 @@ You can set these environment variables to configure to run kite-deploy
 
     ESXI_DATASTORE    Datastore name
 
+    ESXI_FIRMWARE     ESXi firmware, bios or efi
+
     VAULT_PASSWORD    Password to decrypt openstack configuration file
 
     AWS_ACCESS_KEY    AWS access key for AWS API authentication
@@ -70,14 +72,3 @@ You can set these environment variables to configure to run kite-deploy
     AWS_SECRET_KEY    AWS secret key for AWS API authentication
 
     AWS_REGION        AWS region
-
-    AWS_INSTANCE_TPYE     AWS instance type. Suggested instance types:
-                              "t2.medium": Xen based instance with xen_netfront NIC
-                              "t3.medium": KVM based instance with Elastic Network Adapter (ena)
-                              "t3a.medium": KVM based instance with AMD CPU
-                              "m4.large": Xen based instance with the Intel 82599 VF interface (SRIOV)
-                              "m5.large": Mostly used instance
-                              "m5dn.large": Local NVMe-based SSDs
-                              "a1.large": AWS 64-bit Arm Neoverse cores
-                              "m6gd.large": AWS Graviton2 Processor with 64-bit Arm Neoverse cores and local NVMe-based SSDs
-                              "t4g.medium": AWS Graviton2 Processor with 64-bit Arm Neoverse cores

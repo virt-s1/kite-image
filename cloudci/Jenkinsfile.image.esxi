@@ -9,7 +9,7 @@ pipeline {
              steps {
                  withCredentials([usernamePassword(credentialsId: 'vsphere-service-account', passwordVariable: 'VSPHERE_PASSWORD', usernameVariable: 'VSPHERE_USERNAME')]) {
                      sh label: 'run lctp to build vmdk image', script: """
-                         ansible-playbook -v -i inventory -e esxi_firmware=bios -e cloud_platform=esxi build.yaml
+                         ESXI_FIRMWARE=bios ansible-playbook -v -i inventory -e cloud_platform=esxi build.yaml
                      """
                  }
              }
@@ -18,7 +18,7 @@ pipeline {
              steps {
                  withCredentials([usernamePassword(credentialsId: 'vsphere-service-account', passwordVariable: 'VSPHERE_PASSWORD', usernameVariable: 'VSPHERE_USERNAME')]) {
                      sh label: 'run lctp to build vmdk image', script: """
-                         ansible-playbook -v -i inventory -e esxi_firmware=efi -e cloud_platform=esxi build.yaml
+                         ESXI_FIRMWARE=efi ansible-playbook -v -i inventory -e cloud_platform=esxi build.yaml
                      """
                  }
              }

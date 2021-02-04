@@ -38,7 +38,7 @@
     content: attribute
   register: recipe_attribute
 
-- name: set hostname of ostree client
+- name: set hostname of image builder
   set_fact:
     beaker_hostname: "{{ recipe_attribute.matches[0].recipe.system }}"
 

@@ -1,25 +1,6 @@
 ---
-- name: create kickstart file
-  template:
-    src: rhel-8-esxi-ks-cfg.j2
-    dest: "{{ playbook_dir }}/ks.cfg"
-
-- name: create kickstart iso
-  command: mkisofs -V "OEMDRV" -o "{{ playbook_dir }}/ks-{{ esxi_firmware }}.iso" "{{ playbook_dir  }}/ks.cfg"
-
-# rhel-boot.iso and fedora-boot.iso are at lctp-image folder ready
-# - name: "download {{boot_iso[os]}}"
-#   get_url:
-#     url: "https://file-server-virt-qe-3rd.cloud.paas.psi.redhat.com/lctp/{{ boot_iso[os] }}"
-#     dest: "{{ playbook_dir }}/{{ boot_iso[os] }}"
-#     checksum: "sha256:{{ checksum_sha256[os] }}"
-#     timeout: 5400
-#   register: download_result
-#   retries: 3
-#   delay: 3
-#   until: download_result.status_code == 200
-
-- name: "delete ks-{{ esxi_firmware }}.iso if it exists"
+# download rhel boot iso if it does not exist
+- name: check rhel boot iso file
   vsphere_file:
     host: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
@@ -27,10 +8,60 @@
     validate_certs: no
     datacenter: "{{ esxi_datacenter }}"
     datastore: "{{ esxi_datastore }}"
-    path: "ks-{{ esxi_firmware }}.iso"
+    path: "rhel-8.3-boot.iso"
+    state: file
+  register: result_boot_file
+  ignore_errors: yes
+
+- debug:
+    var: result_boot_file
+
+- name: download boot iso and upload to datastore
+  block:
+    - name: download rhel-8.3 boot iso
+      get_url:
+        url: "http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/RHEL-8.3.0-Snapshot-3.1/compose/BaseOS/x86_64/iso/RHEL-8.3.0-20200909.1-BaseOS-x86_64-boot.iso"
+        dest: "{{ playbook_dir }}/rhel-8.3-boot.iso"
+        checksum: "sha256:e4ee08144e3b095302ab5826daec7f7850609278c9054d903369d7f4194d7312"
+        timeout: 5400
+      register: download_result
+      retries: 3
+      delay: 3
+      until: download_result.status_code == 200
+
+    - name: "upload rhel-8.3-boot.iso"
+      vsphere_copy:
+        hostname: "{{ vsphere_server }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: no
+        datacenter: "{{ esxi_datacenter }}"
+        datastore: "{{ esxi_datastore }}"
+        src: "{{ playbook_dir }}/rhel-8.3-boot.iso"
+        path: "rhel-8.3-boot.iso"
+        timeout: 300
+  when: result_boot_file.state == "absent"
+
+- name: create kickstart file
+  template:
+    src: rhel-8-esxi-ks-cfg.j2
+    dest: "{{ playbook_dir }}/ks.cfg"
+
+- name: create kickstart iso
+  command: mkisofs -V "OEMDRV" -o "{{ playbook_dir }}/ks-{{ os }}-{{ esxi_firmware }}.iso" "{{ playbook_dir  }}/ks.cfg"
+
+- name: "delete ks-{{ os }}-{{ esxi_firmware }}.iso if it exists"
+  vsphere_file:
+    host: "{{ vsphere_server }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    datastore: "{{ esxi_datastore }}"
+    path: "ks-{{ os }}-{{ esxi_firmware }}.iso"
     state: absent
 
-- name: "upload ks-{{ esxi_firmware }}.iso"
+- name: "upload ks-{{ os }}-{{ esxi_firmware }}.iso"
   vsphere_copy:
     hostname: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
@@ -38,8 +69,9 @@
     validate_certs: no
     datacenter: "{{ esxi_datacenter }}"
     datastore: "{{ esxi_datastore }}"
-    src: "{{ playbook_dir }}/ks-{{ esxi_firmware }}.iso"
-    path: "ks-{{ esxi_firmware }}.iso"
+    src: "{{ playbook_dir }}/ks-{{ os }}-{{ esxi_firmware }}.iso"
+    path: "ks-{{ os }}-{{ esxi_firmware }}.iso"
+    timeout: 300
 
 - name: "install {{ os }}"
   vmware_guest:
@@ -54,7 +86,7 @@
     guest_id: "{{ esxi_guest_id }}"
     esxi_hostname: "{{ esxi_host }}"
     disk:
-      - size_gb: 10
+      - size_gb: "{{ esxi_disk_gb }}"
         type: thin
         datastore: "{{ esxi_datastore }}"
     hardware:
@@ -72,100 +104,33 @@
         controller_number: 0
         unit_number: 0
         type: iso
-        iso_path: "[{{ esxi_datastore }}] lctp-image/{{ boot_iso[os] }}"
+        iso_path: "[{{ esxi_datastore }}] rhel-8.3-boot.iso"
       - contcontroller_type: ide
         controller_number: 0
         unit_number: 1
         type: iso
-        iso_path: "[{{ esxi_datastore }}] ks-{{ esxi_firmware }}.iso"
-    wait_for_ip_address: yes
+        iso_path: "[{{ esxi_datastore }}] ks-{{ os }}-{{ esxi_firmware }}.iso"
   register: new_guest
+
+- debug:
+    var: new_guest
 
 - name: get uuid and make it a variable
   set_fact:
     hw_uuid: "{{ new_guest.instance.hw_product_uuid  }}"
 
-- name: in case no ip address assigned or stuck at mount
-  block:
-    # The 'vmware_guest_facts' module has been renamed to 'vmware_guest_info'
-    # This feature will be removed in version 2.13
-    - name: wait for ip _really_ being available
-      vmware_guest_info:
-        hostname: "{{ vsphere_server }}"
-        username: "{{ vsphere_username }}"
-        password: "{{ vsphere_password }}"
-        validate_certs: no
-        datacenter: "{{ esxi_datacenter }}"
-        uuid: "{{ hw_uuid }}"
-      register: facts
-      until: facts.instance.ipv4 is not none
-      retries: 180
-      delay: 10
-  rescue:
-    - name: poweroff guest
-      vmware_guest:
-        hostname: "{{ vsphere_server }}"
-        username: "{{ vsphere_username }}"
-        password: "{{ vsphere_password }}"
-        validate_certs: no
-        uuid: "{{ hw_uuid }}"
-        state: poweredoff
-        state_change_timeout: 120
-    - name: start guest
-      vmware_guest:
-        hostname: "{{ vsphere_server }}"
-        username: "{{ vsphere_username }}"
-        password: "{{ vsphere_password }}"
-        validate_certs: no
-        uuid: "{{ hw_uuid }}"
-        state: poweredon
-        state_change_timeout: 120
-    - name: wait for ip _really_ being available
-      vmware_guest_info:
-        hostname: "{{ vsphere_server }}"
-        username: "{{ vsphere_username }}"
-        password: "{{ vsphere_password }}"
-        validate_certs: no
-        datacenter: "{{ datacenter }}"
-        uuid: "{{ hw_uuid }}"
-      register: facts
-      until: facts.instance.ipv4 is not none
-      retries: 30
-      delay: 1
-
-- name: waits until instance is reachable
-  wait_for:
-    host: "{{ facts.instance.ipv4 }}"
-    port: 22
-    search_regex: OpenSSH
-    delay: 10
-    timeout: 1800
-
-- name: guest smoking test
-  vmware_vm_shell:
+- name: wait until vm powered-off (installation finished)
+  vmware_guest_info:
     hostname: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
     password: "{{ vsphere_password }}"
     validate_certs: no
-    vm_id: "{{ hw_uuid }}"
-    vm_id_type: uuid
-    vm_username: "{{ esxi_guest_username }}"
-    vm_password: "{{ esxi_guest_password }}"
-    vm_shell: /usr/bin/cat
-    vm_shell_args: /etc/redhat-release
-    wait_for_process: yes
-  register: shell_command_output
-  failed_when: shell_command_output.exit_code != 0
-
-- name: shut down guest
-  vmware_guest_powerstate:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
     uuid: "{{ hw_uuid }}"
-    state: shutdown-guest
-    state_change_timeout: 200
+  register: facts
+  until: facts.instance.hw_power_status == "poweredOff"
+  retries: 180
+  delay: 10
 
 - name: remove two cdroms before making template
   vmware_guest:
@@ -173,6 +138,8 @@
     username: "{{ vsphere_username }}"
     password: "{{ vsphere_password }}"
     validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
     uuid: "{{ hw_uuid }}"
     cdrom:
       - contcontroller_type: ide
@@ -184,6 +151,132 @@
         unit_number: 1
         state: absent
 
+# template for test
+- name: convert to template
+  vmware_guest:
+    hostname: "{{ vsphere_server }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
+    uuid: "{{ hw_uuid }}"
+    name: "{{ esxi_template }}-tmp"
+    is_template: yes
+
+# test template
+- name: "clone vm from template {{ esxi_template }}-tmp"
+  vmware_guest:
+    hostname: "{{ vsphere_server }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
+    name: "test-{{ esxi_template }}-tmp"
+    folder: ""
+    state: poweredon
+    template: "{{ esxi_template }}-tmp"
+    disk:
+      - size_gb: "{{ esxi_disk_gb }}"
+        type: thin
+        datastore: "{{ esxi_datastore }}"
+    hardware:
+      num_cpus: "{{ esxi_cpu }}"
+      hotadd_cpu: True
+      hotremove_cpu: True
+      memory_mb: "{{ esxi_memory_mb }}"
+      hotadd_memory: True
+      scsi: paravirtual
+      boot_firmware: "{{ esxi_firmware }}"
+    networks:
+      - name: "{{ esxi_network }}"
+        device_type: "{{ esxi_nic_type }}"
+        start_connected: true
+        type: dhcp
+    wait_for_ip_address: yes
+  register: test_guest
+
+- name: get uuid and make it a variable
+  set_fact:
+    test_guest_uuid: "{{ test_guest.instance.hw_product_uuid }}"
+
+- name: in case no ip address assigned or stuck at mount
+  block:
+    - name: wait for ip _really_ being available
+      vmware_guest_info:
+        hostname: "{{ vsphere_server }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: no
+        datacenter: "{{ esxi_datacenter }}"
+        uuid: "{{ test_guest_uuid }}"
+      register: facts
+      until: facts.instance.ipv4 is not none
+      retries: 30
+      delay: 1
+  rescue:
+    - name: poweroff guest
+      vmware_guest:
+        hostname: "{{ vsphere_server }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: no
+        datacenter: "{{ esxi_datacenter }}"
+        esxi_hostname: "{{ esxi_host }}"
+        uuid: "{{ test_guest_uuid }}"
+        state: poweredoff
+        state_change_timeout: 120
+    - name: start guest
+      vmware_guest:
+        hostname: "{{ vsphere_server }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: no
+        datacenter: "{{ esxi_datacenter }}"
+        esxi_hostname: "{{ esxi_host }}"
+        uuid: "{{ test_guest_uuid }}"
+        state: poweredon
+        state_change_timeout: 120
+    - name: wait for ip _really_ being available
+      vmware_guest_info:
+        hostname: "{{ vsphere_server }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: no
+        datacenter: "{{ esxi_datacenter }}"
+        uuid: "{{ test_guest_uuid }}"
+      register: facts
+      until: facts.instance.ipv4 is not none
+      retries: 30
+      delay: 1
+
+- name: waits until instance is reachable
+  wait_for:
+    host: "{{ test_guest.instance.ipv4 }}"
+    port: 22
+    search_regex: OpenSSH
+    delay: 10
+    timeout: 1800
+
+- name: add instance to guest group
+  add_host:
+    name: "{{ test_guest.instance.ipv4 }}"
+    group: guest
+
+- name: keep private key permission to 600
+  file:
+    path: "{{ playbook_dir }}/key/identity"
+    mode: "0600"
+
+- name: ensure cloud-init has finished
+  raw: test -f /var/lib/cloud/instance/boot-finished
+  retries: 60
+  register: cloud_init_check
+  changed_when: false
+  until: cloud_init_check is success
+  delegate_to: "{{ test_guest.instance.ipv4 }}"
+
 - name: remove current template
   vmware_guest:
     hostname: "{{ vsphere_server }}"
@@ -191,21 +284,44 @@
     password: "{{ vsphere_password }}"
     validate_certs: no
     datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
     name: "{{ esxi_template }}"
     is_template: yes
     state: absent
 
-- name: convert to template
+- name: rename template
   vmware_guest:
     hostname: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
     password: "{{ vsphere_password }}"
     validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
     uuid: "{{ hw_uuid }}"
     name: "{{ esxi_template }}"
     is_template: yes
 
-- name: "clean up ks-{{ esxi_firmware }}.iso finally"
+- name: shut down template test vm
+  vmware_guest_powerstate:
+    hostname: "{{ vsphere_server }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: no
+    uuid: "{{ test_guest_uuid }}"
+    state: powered-off
+
+- name: remove template test vm
+  vmware_guest:
+    hostname: "{{ vsphere_server }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: no
+    datacenter: "{{ esxi_datacenter }}"
+    esxi_hostname: "{{ esxi_host }}"
+    uuid: "{{ test_guest_uuid }}"
+    state: absent
+
+- name: "delete ks-{{ os }}-{{ esxi_firmware }}.iso finally"
   vsphere_file:
     host: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
@@ -213,5 +329,5 @@
     validate_certs: no
     datacenter: "{{ esxi_datacenter }}"
     datastore: "{{ esxi_datastore }}"
-    path: "ks-{{ esxi_firmware }}.iso"
+    path: "ks-{{ os }}-{{ esxi_firmware }}.iso"
     state: absent

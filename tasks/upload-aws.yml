@@ -248,6 +248,140 @@
 - debug:
     var: ec2_snapshot
 
+- name: AMI registration from EBS Snapshot
+  ec2_ami:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    name: "kite.tmp.imagebuild.{{ os }}.{{ arch }}"
+    description: "{{ os }} {{ arch }} ami built on {{ ansible_date_time.iso8601  }}"
+    state: present
+    architecture: "{{ ami_arch }}"
+    virtualization_type: hvm
+    root_device_name: /dev/xvda
+    device_mapping:
+      - device_name: /dev/xvda
+        volume_size: 12
+        snapshot_id: "{{ ec2_snapshot.snapshot_id }}"
+        delete_on_termination: true
+        volume_type: gp2
+    enhanced_networking: yes
+    sriov_net_support: simple
+    tags:
+      kite: "kite.tmp.imagebuild.{{ os }}.{{ arch }}"
+  register: ec2_ami
+
+- debug:
+    var: ec2_ami
+
+- name: delete the 2nd EBS volume
+  ec2_vol:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    id: "{{ ec2_volume.volume_id }}"
+    state: absent
+
+# test AMI
+- block:
+    - name: create ec2 instance
+      ec2:
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
+        assign_public_ip: yes
+        group_id: "{{ ec2_security_group.group_id }}"
+        image: "{{ ec2_ami.image_id }}"
+        instance_type: "{{ builder_instance_type[arch] }}"
+        vpc_subnet_id: "{{ ec2_vpc_subnet.subnet.id }}"
+        key_name: "kite.imagebuild.{{ os }}.{{ arch }}"
+        zone: "{{ ec2_zones.availability_zones[-2].zone_name }}"
+        instance_initiated_shutdown_behavior: terminate # required by spot instances
+        spot_price: "0.1"
+        spot_type: one-time
+        state: present
+        volumes:
+          - device_name: /dev/xvda
+            volume_size: 12
+            volume_type: gp2
+            delete_on_termination: true
+        instance_tags:
+          kite: "kite.imagebuild.{{ os }}.{{ arch }}"
+        wait: yes
+      register: test_ec2_instance
+
+    - debug:
+        var: test_ec2_instance
+
+    - name: waits until ssh is reachable
+      wait_for:
+        host: "{{ test_ec2_instance.instances[0].public_ip }}"
+        port: 22
+        search_regex: OpenSSH
+        delay: 10
+
+    - name: add instance to guest group
+      add_host:
+        name: "{{ test_ec2_instance.instances[0].public_ip }}"
+        group: guest
+
+    - name: keep private key permission to 600
+      file:
+        path: "{{ playbook_dir }}/key/identity"
+        mode: "0600"
+
+    - name: ensure cloud-init has finished
+      raw: test -f /var/lib/cloud/instance/boot-finished
+      retries: 60
+      register: cloud_init_check
+      changed_when: false
+      until: cloud_init_check is success
+      delegate_to: "{{ test_ec2_instance.instances[0].public_ip }}"
+
+    - name: check /opt/ltp/runltp exist or not
+      stat:
+        path: /opt/ltp/runltp
+      register: result_stat
+      delegate_to: "{{ test_ec2_instance.instances[0].public_ip }}"
+
+    - name: building aws ami fail
+      fail:
+        msg: "building aws ami {{ os }} {{ arch }} fail"
+      when: not result_stat.stat.exists
+
+  rescue:
+    - name: deregister test ami because ami test failure
+      ec2_ami:
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
+        image_id: "{{ ec2_ami.image_id }}"
+        delete_snapshot: True
+        state: absent
+
+    - name: building aws ami fail
+      fail:
+        msg: "building aws ami {{ os }} {{ arch }} fail"
+
+  always:
+    - name: terminate ami test instance
+      ec2:
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
+        instance_ids: "{{ test_ec2_instance.instance_ids[0] }}"
+        state: absent
+        wait: yes
+
+    - name: delete keypair
+      ec2_key:
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
+        name: "kite.imagebuild.{{ os }}.{{ arch }}"
+        state: absent
+
+    - name: delete security group
+      ec2_group:
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
+        group_id: "{{ ec2_security_group.group_id }}"
+        state: absent
+
 - name: get old ami info
   ec2_ami_info:
     profile: "{{ aws_profile }}"
@@ -267,6 +401,14 @@
     delete_snapshot: True
     state: absent
   loop: "{{ result_ami.images | map(attribute='image_id') | list }}"
+
+- name: deregister test ami
+  ec2_ami:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    image_id: "{{ ec2_ami.image_id }}"
+    delete_snapshot: False
+    state: absent
 
 - name: AMI registration from EBS Snapshot
   ec2_ami:
@@ -288,10 +430,10 @@
     sriov_net_support: simple
     tags:
       kite: "kite.imagebuild.{{ os }}.{{ arch }}"
-  register: ec2_ami
+  register: new_ami
 
 - debug:
-    var: ec2_ami
+    var: new_ami
 
 - name: save ami id into ssm parameter store
   aws_ssm_parameter_store:
@@ -299,25 +441,4 @@
     region: "{{ aws_region }}"
     name: "kite_imagebuild_{{ os }}_{{ arch }}"
     description: "Save latest {{ os }} {{ arch }} image id"
-    value: "{{ ec2_ami.image_id }}"
-
-- name: delete the 2nd EBS volume
-  ec2_vol:
-    profile: "{{ aws_profile }}"
-    region: "{{ aws_region }}"
-    id: "{{ ec2_volume.volume_id }}"
-    state: absent
-
-- name: delete keypair
-  ec2_key:
-    profile: "{{ aws_profile }}"
-    region: "{{ aws_region }}"
-    name: "kite.imagebuild.{{ os }}.{{ arch }}"
-    state: absent
-
-- name: delete security group
-  ec2_group:
-    profile: "{{ aws_profile }}"
-    region: "{{ aws_region }}"
-    group_id: "{{ ec2_security_group.group_id }}"
-    state: absent
+    value: "{{ new_ami.image_id }}"

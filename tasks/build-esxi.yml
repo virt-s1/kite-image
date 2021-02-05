@@ -10,6 +10,7 @@
     datastore: "{{ esxi_datastore }}"
     path: "rhel-8.3-boot.iso"
     state: file
+    timeout: 120
   register: result_boot_file
   ignore_errors: yes
 
@@ -277,6 +278,18 @@
       changed_when: false
       until: cloud_init_check is success
       delegate_to: "{{ test_guest.instance.ipv4 }}"
+
+    - name: check /opt/ltp/runltp exist or not
+      stat:
+        path: /opt/ltp/runltp
+      register: result_stat
+      delegate_to: "{{ test_guest.instance.ipv4 }}"
+
+    - name: building esxi image fail
+      fail:
+        msg: "building esxi {{ os }} {{ esxi_firmware }} image fail"
+      when: not result_stat.stat.exists
+
   rescue:
     - name: "remove template {{ esxi_template }}-tmp"
       vmware_guest:

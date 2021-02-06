@@ -1,25 +1,31 @@
+# Kickstart file to build RHEL-8 OpenStack image
+
 text
+lang en_US.UTF-8
+keyboard us
+timezone --utc UTC
 auth --enableshadow --passalgo=sha512
 shutdown
 firewall --enabled --service=ssh
 firstboot --disable
 ignoredisk --only-use=vda
-keyboard --vckeymap=us --xlayouts='us'
-# System language
-lang en_US.UTF-8
+
 # additional yum repositories that can be used as sources for package installation
 repo --name="BaseOS" --baseurl={{ repos[os][arch]["baseos"] }} --cost=100
 repo --name="AppStream" --baseurl={{ repos[os][arch]["appstream"] }} --cost=100
+
 # Network information
-network  --bootproto=dhcp --device=link --activate --onboot=on
-network  --hostname=localhost.localdomain
+network --bootproto=dhcp --device=link --activate --onboot=on
+network --hostname=localhost.localdomain
+
 # Root password
 rootpw --iscrypted --lock
+
 selinux --enforcing
-services --disabled="kdump" --enabled="NetworkManager,sshd,rsyslog,chronyd,cloud-init,cloud-init-local,cloud-config,cloud-final,rngd"
-timezone UTC --isUtc
+services --disabled="kdump" --enabled="NetworkManager,sshd,cloud-init,cloud-init-local,cloud-config,cloud-final,rngd"
+
 # Disk
-bootloader --append="console=ttyS0,115200n8 no_timer_check crashkernel=auto net.ifnames=0" --location=mbr --timeout=1 --boot-drive=vda 
+bootloader --append="console=ttyS0,115200n8 no_timer_check net.ifnames=0" --location=mbr --timeout=1 --boot-drive=vda 
 zerombr
 clearpart --all --initlabel 
 reqpart
@@ -53,9 +59,16 @@ echo .
 # but we dont ship it in cloud
 dnf -C -y remove firewalld --setopt="clean_requirements_on_remove=1"
 dnf -C -y remove avahi\* 
+
+echo -n "Getty fixes"
+# although we want console output going to the serial console, we don't
+# actually have the opportunity to login there. FIX.
+# we don't really need to auto-spawn _any_ gettys.
 sed -i '/^#NAutoVTs=.*/ a\
 NAutoVTs=0' /etc/systemd/logind.conf
 
+echo -n "Network fixes"
+# initscripts don't like this file to be missing.
 cat > /etc/sysconfig/network << EOF
 NETWORKING=yes
 NOZEROCONF=yes
@@ -88,8 +101,6 @@ cat > /etc/hosts << EOF
 EOF
 echo .
 
-systemctl mask tmp.mount
-
 cat <<EOL > /etc/sysconfig/kernel
 # UPDATEDEFAULT specifies if new-kernel-pkg should make
 # new kernels the default
@@ -105,25 +116,21 @@ echo "RUN_FIRSTBOOT=NO" > /etc/sysconfig/firstboot
 # RHEL cloud user
 sed -i 's/name: cloud-user/name: admin/g' /etc/cloud/cloud.cfg
 
-dnf clean all
+# allow sudo powers to admin
+echo -e 'admin\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
 
-# change dhcp client retry/timeouts to resolve #6866
-cat  >> /etc/dhcp/dhclient.conf << EOF
+# Disable subscription-manager yum plugins
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
 
-timeout 300;
-retry 60;
-EOF
+echo "Cleaning old yum repodata."
+yum --noplugins clean all
+truncate -c -s 0 /var/log/yum.log
 
-
-rm -rf /var/log/yum.log
-rm -rf /var/lib/yum/*
-rm -rf /root/install.log
-rm -rf /root/install.log.syslog
-rm -rf /root/anaconda-ks.cfg
-rm -rf /var/log/anaconda*
-
+# remove random-seed so it's not the same every time
 rm -f /var/lib/systemd/random-seed
 
+# Remove machine-id on the pre generated images
 cat /dev/null > /etc/machine-id
 
 echo "Fixing SELinux contexts."
@@ -161,28 +168,24 @@ tar -zxf 20210121.tar.gz
 cd ltp-20210121 && autoreconf -i && ./configure && make all && make install
 cd .. && rm -f 20210121.tar.gz && rm -rf ltp-20210121
 
-true
+# Anaconda is writing to /etc/resolv.conf from the generating environment.
+# The system should start out with an empty file.
+# this one should be the last instruction of post script,
+# otherwise no dns server will be available after this
+truncate -s 0 /etc/resolv.conf
 
 %end
 
 %packages
 @core
-chrony
-dnf
-yum
-cloud-init
-cloud-utils-growpart
-NetworkManager
-dracut-config-generic
-dracut-norescue
-firewalld
-grub2
 kernel
-nfs-utils
-rsync
-tar
-dnf-utils
 yum-utils
+rng-tools
+
+redhat-release
+redhat-release-eula
+
+# pull firmware packages out
 -aic94xx-firmware
 -alsa-firmware
 -alsa-lib
@@ -207,18 +210,41 @@ yum-utils
 -libertas-sd8686-firmware
 -libertas-sd8787-firmware
 -libertas-usb8388-firmware
--biosdevname
--iprutils
--plymouth
 
-python3-jsonschema
-qemu-guest-agent
+# cloud-init does magical things with openstack metadata, including provisioning
+# a user account with ssh keys.
+cloud-init
+
+# We need this image to be portable; also, rescue mode isn't useful here.
+dracut-config-generic
+dracut-norescue
+
+# We need a bootloader. grub2 because of xfs.
+grub2
+
+# Needed initially, but removed below.
+firewalld
+
+# cherry-pick a few things from @base
+tar
+rsync
 dhcp-client
--langpacks-*
--langpacks-en
+NetworkManager
+{% if os != "rhel-8-1" and os != "rhel-8-0" %}
+NetworkManager-cloud-setup
+{% endif %}
 
-redhat-release
-rng-tools
+# Some things from @core we can do without in a minimal install
+-biosdevname
+-plymouth
+-iprutils
+
+# enable rootfs resize on boot
+cloud-utils-growpart
+gdisk
+
+# add insight-clients
+insights-client
 
 python3
 traceroute
@@ -250,4 +276,15 @@ unzip
 logrotate
 bzip2
 keyutils
+
+# build LTP
+make
+pkgconf
+autoconf
+automake
+bison
+flex
+m4
+kernel-headers
+glibc-headers
 %end

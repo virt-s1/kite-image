@@ -16,10 +16,19 @@
   retries: 5
   delay: 60
 
-- name: generate kickstart file
+- name: generate kickstart file for ami
   template:
     src: "{{ os }}-{{ cloud_platform }}-ks-cfg.j2"
     dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
+  when:
+    - cloud_platform == "aws"
+
+- name: generate kickstart file for openstack image
+  template:
+    src: "rhel-8-{{ cloud_platform }}-ks-cfg.j2"
+    dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
+  when:
+    - cloud_platform == "openstack"
 
 - name: generate virt-install-image shell script
   template:

@@ -1,17 +1,108 @@
 ---
+- name: upload tmp image to psi openstack
+  os_image:
+    cloud: psi-openstack
+    name: "tmp-kite-openstack-{{ os }}"
+    filename: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    # https://docs.openstack.org/glance/latest/admin/useful-image-properties.html
+    properties:
+      architecture: x86_64
+      os_distro: rhel
+      hw_rng_model: virtio
+
+# image test
+- block:
+    - name: deploy image test instance
+      os_server:
+        cloud: psi-openstack
+        name: "kite-image-test-{{ os }}"
+        image: "tmp-kite-openstack-{{ os }}"
+        flavor: "{{ flavor }}"
+        network: "{{ network }}"
+        key_name: kite-image-key
+        security_groups: kite-image
+        auto_ip: yes
+        wait: yes
+        timeout: 600
+      register: instance_result
+
+    - name: waits until instance is reachable
+      wait_for:
+        host: "{{ instance_result.openstack.public_v4 }}"
+        port: 22
+        search_regex: OpenSSH
+        delay: 10
+
+    - name: add os instance ip into host group builder
+      add_host:
+        name: "{{ instance_result.openstack.public_v4 }}"
+        groups: guest
+
+    - name: keep private key permission to 600
+      file:
+        path: "{{ playbook_dir }}/key/identity"
+        mode: "0600"
+
+    - name: ensure cloud-init has finished
+      raw: test -f /var/lib/cloud/instance/boot-finished
+      retries: 60
+      register: cloud_init_check
+      changed_when: false
+      until: cloud_init_check is success
+      delegate_to: "{{ instance_result.openstack.public_v4 }}"
+
+    - name: check /opt/ltp/runltp exist or not
+      stat:
+        path: /opt/ltp/runltp
+      register: result_stat
+      delegate_to: "{{ instance_result.openstack.public_v4 }}"
+
+    - name: "building {{ os }} openstack image fail"
+      fail:
+        msg: "building {{ os }} openstack image fail"
+      when: not result_stat.stat.exists
+
+  rescue:
+    - name: remove tmp image
+      os_image:
+        cloud: psi-openstack
+        name: "tmp-kite-openstack-{{ os }}"
+        state: absent
+
+    - name: "building {{ os }} openstack image fail"
+      fail:
+        msg: "building {{ os }} openstack image fail"
+
+  always:
+    - name: remove image test instance
+      os_server:
+        cloud: psi-openstack
+        name: "kite-image-test-{{ os }}"
+        state: absent
+
+    - name: delete tested tmp image
+      os_image:
+        cloud: psi-openstack
+        name: "tmp-kite-openstack-{{ os }}"
+        state: absent
+
 - name: delete old kite image first
   os_image:
     cloud: psi-openstack
     name: kite-openstack-{{ os }}
     state: absent
 
-- name: upload image to psi openstack
+- name: upload tmp image to psi openstack
   os_image:
     cloud: psi-openstack
-    name: kite-openstack-{{ os }}
-    filename: "{{ playbook_dir }}/{{ os }}.{{ image_type[cloud_platform] }}"
+    name: "kite-openstack-{{ os }}"
+    filename: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
     # https://docs.openstack.org/glance/latest/admin/useful-image-properties.html
     properties:
       architecture: x86_64
       os_distro: rhel
       hw_rng_model: virtio
+  register: result_image
+
+- debug:
+    var: result_image

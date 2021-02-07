@@ -34,9 +34,9 @@ Build Openstack qcow2 image with:
 
 ## kite-deploy configuration
 
-You can set these environment variables to configure to run kite-deploy
+You can set these environment variables to configure to run kite-image
 
-    TEST_OS           The OS to run the tests in.  Currently supported values:
+    TEST_OS           The OS to run the tests in. Currently supported values:
                           "rhel-8-0"
                           "rhel-8-1"
                           "rhel-8-2"

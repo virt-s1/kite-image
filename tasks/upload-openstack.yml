@@ -86,13 +86,13 @@
         name: "tmp-kite-openstack-{{ os }}"
         state: absent
 
-- name: delete old kite image first
+- name: "delete last {{ os }} openstack image"
   os_image:
     cloud: psi-openstack
     name: kite-openstack-{{ os }}
     state: absent
 
-- name: upload tmp image to psi openstack
+- name: "upload new {{ os }} openstack image to psi"
   os_image:
     cloud: psi-openstack
     name: "kite-openstack-{{ os }}"

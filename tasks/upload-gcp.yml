@@ -1,0 +1,185 @@
+---
+- name: gcloud/gsutil - authorizing with a service account
+  command: gcloud auth activate-service-account --key-file={{ gcp_service_account_file }}
+
+- name: create a bucket
+  gcp_storage_bucket:
+    name: "{{ gcp_storage_bucket_name }}"
+    project: virt-qe
+    auth_kind: serviceaccount
+    service_account_file: "{{ gcp_service_account_file }}"
+    state: present
+
+- name: "convert {{ os }}_{{ arch }}.qcow2 to raw"
+  command: qemu-img convert -O raw {{ playbook_dir }}/{{ os }}_{{ arch }}.qcow2 {{ playbook_dir }}/disk.raw
+
+# archive module does not support --format=oldgnu which is required by GCP
+# https://cloud.google.com/compute/docs/import/import-existing-image#requirements_for_the_image_file
+- name: compress raw to .tar.gz
+  command: tar --format=oldgnu -Sczf {{ os }}_{{ arch }}.tar.gz disk.raw
+
+- name: "get MD5 checksum of {{ os }}_{{ arch }}.tar.gz"
+  command: gsutil hash -m {{ os }}_{{ arch }}.tar.gz
+  register: result_image_md5
+
+- set_fact:
+    md5_checksum: "{{ result_image_md5.stdout.split('\t\t')[-1] }}"
+
+- name: "upload {{ os }}_{{ arch }}.tar.gz to gs://{{ gcp_storage_bucket_name }}"
+  command: gsutil -h Content-MD5:{{ md5_checksum }} cp {{ playbook_dir }}/{{ os }}_{{ arch }}.tar.gz gs://{{ gcp_storage_bucket_name }}
+
+# image name must be a match of regex '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?|[1-9][0-9]{0,19}'
+- set_fact:
+    image_name: "kite-image-{{ os }}-{{ arch | replace('_', '-') }}"
+
+- name: create image for test
+  command: gcloud compute images create {{ image_name }}-tmp --source-uri gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz --guest-os-features="UEFI_COMPATIBLE,GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE" --project={{ gcp_project }} --labels=kite=kite-imagebuild-{{ os }}-{{ arch }}
+  when:
+    - os != "rhel-8-0"
+    - os != "rhel-8-1"
+
+- name: create image for test
+  command: gcloud compute images create {{ image_name }}-tmp --source-uri gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz --guest-os-features="UEFI_COMPATIBLE,VIRTIO_SCSI_MULTIQUEUE" --project={{ gcp_project }} --labels=kite=kite-imagebuild-{{ os }}-{{ arch }}
+  when: os == "rhel-8-0" or os == "rhel-8-1"
+
+# image somking test
+- block:
+    - set_fact:
+        test_instance_name: "image-test-{{ os }}-{{ arch | replace('_', '-') }}"
+
+    # rhel-8-2 and above support SEV and GVNIC
+    - set_fact:
+        instance_create_args: "--confidential-compute --network-interface=nic-type=GVNIC"
+
+    # Both SEV and GVNIC are not supported by rhel-8-0 and rhel-8-1
+    - set_fact:
+        instance_create_args: ""
+      when: os == "rhel-8-0" or os == "rhel-8-1"
+
+    - name: create features enabled instance for testing
+      command: gcloud compute instances create {{ test_instance_name }} --zone=us-central1-a --machine-type=n2d-standard-2 --boot-disk-auto-delete --boot-disk-size=20GB --boot-disk-type=pd-ssd --labels=kite=image-test-{{ os }}-{{ arch }} --metadata-from-file=ssh-keys=key/gcp-ssh-key --metadata=block-project-ssh-keys=TRUE --preemptible --image={{ image_name }}-tmp --service-account={{ gcp_service_account_name }} {{ instance_create_args }} --project={{ gcp_project }} --format=json
+      register: test_instance
+
+    - debug:
+        var: test_instance
+
+    - set_fact:
+        instance_ip: "{{ test_instance.stdout | from_json | json_query('[0].networkInterfaces[0].accessConfigs[0].natIP') }}"
+
+    - name: waits until ssh is reachable
+      wait_for:
+        host: "{{ instance_ip }}"
+        port: 22
+        search_regex: OpenSSH
+        delay: 10
+
+    - name: add instance to guest group
+      add_host:
+        name: "{{ instance_ip }}"
+        group: guest
+
+    - name: keep private key permission to 600
+      file:
+        path: "{{ playbook_dir }}/key/identity"
+        mode: "0600"
+
+    - name: ensure cloud-init has finished
+      raw: test -f /var/lib/cloud/instance/boot-finished
+      retries: 60
+      register: cloud_init_check
+      changed_when: false
+      until: cloud_init_check is success
+      delegate_to: "{{ instance_ip }}"
+
+    # https://cloud.google.com/compute/confidential-vm/docs/creating-cvm-instance#verify_that_is_enabled
+    - name: SEV feature checking
+      shell: dmesg | grep SEV | head
+      register: result_sev
+      delegate_to: "{{ instance_ip }}"
+      when:
+        - os != "rhel-8-0"
+        - os != "rhel-8-1"
+
+    - name: SEV not support building gcp image fail
+      fail:
+        msg: "can't find SEV support, gcp image {{ os }} {{ arch }} fail"
+      when:
+        - os != "rhel-8-0"
+        - os != "rhel-8-1"
+        - "'SEV' not in result_sev.stdout"
+
+    # https://cloud.google.com/compute/docs/networking/using-gvnic#verify-gvnic
+    - name: GVNIC feature checking
+      command: lshw -class network
+      become: yes
+      register: result_gvnic
+      delegate_to: "{{ instance_ip }}"
+      when:
+        - os != "rhel-8-0"
+        - os != "rhel-8-1"
+
+    - name: GVNIC not support building gcp image fail
+      fail:
+        msg: "can't find GVNIC support, gcp image {{ os }} {{ arch }} fail"
+      when:
+        - os != "rhel-8-0"
+        - os != "rhel-8-1"
+        - "'gVNIC' not in result_gvnic.stdout"
+
+    # https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart
+    # 10G image will be resized to 20G (disk size)
+    - name: disk growpart feature checking
+      command: df -h
+      become: yes
+      register: result_growpart
+      delegate_to: "{{ instance_ip }}"
+
+    - name: disk growpart not support building gcp image fail
+      fail:
+        msg: "can't find disk growpart support, gcp image {{ os }} {{ arch }} fail"
+      when: "'20G' not in result_growpart.stdout"
+
+    - name: check /opt/ltp/runltp exist or not
+      stat:
+        path: /opt/ltp/runltp
+      register: result_stat
+      delegate_to: "{{ instance_ip }}"
+
+    - name: building gcp image fail
+      fail:
+        msg: "building gcp image {{ os }} {{ arch }} fail"
+      when: not result_stat.stat.exists
+
+  rescue:
+    - name: "delete {{ os }}_{{ arch }}.tar.gz from bucket {{ gcp_storage_bucket_name }}"
+      command: gsutil rm gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz
+
+    - name: building aws ami fail
+      fail:
+        msg: "building aws ami {{ os }} {{ arch }} fail"
+
+  always:
+    - name: "delete tmp image {{ image_name }}-tmp"
+      command: gcloud compute images delete {{ image_name }}-tmp --project={{ gcp_project }}
+
+    - name: delete test instance
+      command: gcloud compute instances delete {{ test_instance_name }} --zone=us-central1-a --delete-disks=all --project={{ gcp_project }}
+
+- name: old image exists or not
+  gcp_compute_image_info:
+    filters:
+    - name = "{{ image_name }}"
+    project: virt-qe
+    auth_kind: serviceaccount
+    service_account_file: "{{ gcp_service_account_file }}"
+  register: result_image
+
+- name: "delete old image {{ image_name }}"
+  command: gcloud compute images delete {{ image_name }} --project={{ gcp_project }}
+  when: result_image.resources != []
+
+- name: "create new {{ image_name }}"
+  command: gcloud compute images create {{ image_name }} --source-uri gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz --guest-os-features="UEFI_COMPATIBLE,GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE" --project={{ gcp_project }} --labels=kite=kite-imagebuild-{{ os }}-{{ arch }}
+
+- name: "delete {{ os }}_{{ arch }}.tar.gz from bucket {{ gcp_storage_bucket_name }}"
+  command: gsutil rm gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz

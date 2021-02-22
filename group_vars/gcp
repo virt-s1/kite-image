@@ -1,0 +1,4 @@
+gcp_service_account_file: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_FILE') }}"
+gcp_service_account_name: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_NAME') }}"
+gcp_project: "{{ lookup('env', 'GCP_PROJECT') }}"
+gcp_storage_bucket_name: "{{ lookup('env', 'GCP_STORAGE_BUCKET_NAME') }}"

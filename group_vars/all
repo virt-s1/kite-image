@@ -46,4 +46,5 @@ repos:
 image_type:
   aws: qcow2
   openstack: qcow2
+  gcp: qcow2
   azure: vhd

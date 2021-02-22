@@ -1,0 +1,261 @@
+# Kickstart file to build RHEL-8 Google cloud image
+
+text
+lang en_US.UTF-8
+keyboard us
+timezone --utc UTC
+# google cloud needs "console=ttyS0,38400n8d"
+# https://cloud.google.com/compute/docs/import/import-existing-image#configure_bootloader
+bootloader --timeout=0 --append="console=ttyS0,38400n8d net.ifnames=0"
+auth --enableshadow --passalgo=sha512
+selinux --enforcing
+firewall --enabled --service=ssh
+network --bootproto=dhcp --device=link --activate --onboot=on
+{% if os == "rhel-8-4" %}
+services --enabled=sshd,NetworkManager,nm-cloud-setup.service,nm-cloud-setup.timer,cloud-init,cloud-init-local,cloud-config,cloud-final --disabled kdump,rhsmcertd
+{% endif %}
+services --enabled=sshd,NetworkManager,cloud-init,cloud-init-local,cloud-config,cloud-final --disabled kdump,rhsmcertd
+
+rootpw --iscrypted nope
+
+# additional yum repositories that can be used as sources for package installation
+repo --name="BaseOS" --baseurl={{ repos[os][arch]["baseos"] }} --cost=100
+repo --name="AppStream" --baseurl={{ repos[os][arch]["appstream"] }} --cost=100
+
+zerombr
+clearpart --all
+part /boot/efi --fstype="efi" --size=200 --ondisk vda
+part /boot --fstype="xfs" --size=512 --ondisk vda
+part / --size 6144 --fstype="xfs" --ondisk vda
+shutdown
+
+
+# Packages
+%packages
+@core
+kernel
+yum-utils
+
+redhat-release
+redhat-release-eula
+
+# pull firmware packages out
+-aic94xx-firmware
+-alsa-firmware
+-alsa-lib
+-alsa-tools-firmware
+-ivtv-firmware
+-iwl1000-firmware
+-iwl100-firmware
+-iwl105-firmware
+-iwl135-firmware
+-iwl2000-firmware
+-iwl2030-firmware
+-iwl3160-firmware
+-iwl3945-firmware
+-iwl4965-firmware
+-iwl5000-firmware
+-iwl5150-firmware
+-iwl6000-firmware
+-iwl6000g2a-firmware
+-iwl6000g2b-firmware
+-iwl6050-firmware
+-iwl7260-firmware
+-libertas-sd8686-firmware
+-libertas-sd8787-firmware
+-libertas-usb8388-firmware
+
+# cloud-init does magical things with GCP metadata, including provisioning
+# a user account with ssh keys.
+cloud-init
+
+# We need this image to be portable; also, rescue mode isn't useful here.
+dracut-config-generic
+dracut-norescue
+
+# We need a bootloader. grub2 because of xfs.
+grub2
+
+# Needed initially, but removed below.
+firewalld
+
+# cherry-pick a few things from @base
+tar
+rsync
+dhcp-client
+NetworkManager
+{% if os == "rhel-8-4" %}
+NetworkManager-cloud-setup
+{% endif %}
+
+# Some things from @core we can do without in a minimal install
+-biosdevname
+# google cloud needs remove the "rhgb" and "quiet" kernel command-line arguments
+-plymouth
+-iprutils
+
+# enable rootfs resize on boot
+cloud-utils-growpart
+gdisk
+
+# add insight-clients
+insights-client
+
+# LTP dependence
+python3
+traceroute
+xinetd
+dnsmasq
+dhcp-server
+telnet
+tcpdump
+expect
+net-tools
+bind-utils
+numactl-devel
+libaio-devel
+libaio
+gdb
+dosfstools
+sysstat
+ksh
+tcsh
+gcc
+gcc-c++
+git
+wget
+curl
+bc
+psmisc
+quota
+unzip
+logrotate
+bzip2
+keyutils
+
+# build LTP
+make
+pkgconf
+autoconf
+automake
+bison
+flex
+m4
+kernel-headers
+glibc-headers
+%end
+
+#
+# Add custom post scripts after the base post.
+#
+%post --erroronfail
+
+# workaround anaconda requirements
+passwd -d root
+passwd -l root
+
+# temporary hack to get around a koji bug
+# /sbin/chkconfig rh-cloud-firstboot off
+# Koji fix applied, Turning firstboot on for testing
+/sbin/chkconfig rh-cloud-firstboot on
+
+# setup systemd to boot to the right runlevel
+echo -n "Setting default runlevel to multiuser text mode"
+rm -f /etc/systemd/system/default.target
+ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
+echo .
+
+# Remove firewalld; it is required to be present for install/image building.
+echo "Removing firewalld."
+yum -C -y --noplugins remove firewalld --setopt="clean_requirements_on_remove=1"
+
+echo -n "Getty fixes"
+# although we want console output going to the serial console, we don't
+# actually have the opportunity to login there. FIX.
+# we don't really need to auto-spawn _any_ gettys.
+sed -i '/^#NAutoVTs=.*/ a\
+NAutoVTs=0' /etc/systemd/logind.conf
+
+echo -n "Network fixes"
+# initscripts don't like this file to be missing.
+cat > /etc/sysconfig/network << EOF
+NETWORKING=yes
+NOZEROCONF=yes
+EOF
+
+# For cloud images, 'eth0' _is_ the predictable device name, since
+# we don't want to be tied to specific virtual (!) hardware
+rm -f /etc/udev/rules.d/70*
+ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules
+
+# simple eth0 config, again not hard-coded to the build hardware
+cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+DEVICE="eth0"
+BOOTPROTO="dhcp"
+ONBOOT="yes"
+TYPE="Ethernet"
+USERCTL="yes"
+PEERDNS="yes"
+IPV6INIT="no"
+EOF
+
+cat <<EOF > /etc/NetworkManager/conf.d/gcp-mtu.conf
+# In GCP it is recommended to use 1460 as the MTU.
+# Set it to 1460 for all connections.
+# https://cloud.google.com/network-connectivity/docs/vpn/concepts/mtu-considerations
+[connection]
+ethernet.mtu = 1460
+EOF
+
+# generic localhost names
+cat > /etc/hosts << EOF
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+EOF
+echo .
+
+cat <<EOL > /etc/sysconfig/kernel
+# UPDATEDEFAULT specifies if new-kernel-pkg should make
+# new kernels the default
+UPDATEDEFAULT=yes
+
+# DEFAULTKERNEL specifies the default kernel package type
+DEFAULTKERNEL=kernel
+EOL
+
+# make sure firstboot doesn't start
+echo "RUN_FIRSTBOOT=NO" > /etc/sysconfig/firstboot
+
+# tell cloud-init to create the gcp account
+sed -i 's/cloud-user/admin/' /etc/cloud/cloud.cfg
+
+# cloud-init will add "admin" as sudoers in /etc/sudoers.d/90-cloud-init-users
+
+# Disable subscription-manager yum plugins
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
+
+echo "Cleaning old yum repodata."
+yum --noplugins clean all
+truncate -c -s 0 /var/log/yum.log
+
+echo "Fixing SELinux contexts."
+touch /var/log/cron
+touch /var/log/boot.log
+mkdir -p /var/cache/yum
+/usr/sbin/fixfiles -R -a restore
+
+# Rerun dracut for the installed kernel (not the running kernel):
+KERNEL_VERSION=$(rpm -q kernel --qf '%{V}-%{R}.%{arch}\n')
+dracut -f /boot/initramfs-$KERNEL_VERSION.img $KERNEL_VERSION
+
+cat /dev/null > /etc/machine-id
+
+# Build and install ltp
+wget https://github.com/linux-test-project/ltp/archive/20210121.tar.gz
+tar -zxf 20210121.tar.gz
+cd ltp-20210121 && autoreconf -i && ./configure && make all && make install
+cd .. && rm -f 20210121.tar.gz && rm -rf ltp-20210121
+
+%end

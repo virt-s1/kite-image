@@ -28,7 +28,7 @@
     src: "rhel-8-{{ cloud_platform }}-ks-cfg.j2"
     dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
   when:
-    - cloud_platform == "openstack"
+    - cloud_platform == "openstack" or cloud_platform == "gcp"
 
 - name: generate virt-install-image shell script
   template:

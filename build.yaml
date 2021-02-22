@@ -5,7 +5,8 @@
   tasks:
     - include_tasks: tasks/prepare-openstack.yml
       when:
-        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+        - cloud_platform == "aws" or cloud_platform == "gcp" or cloud_platform == "azure" or cloud_platform == "openstack"
+
         - arch == "x86_64"
 
 - hosts: beaker
@@ -21,7 +22,7 @@
   tasks:
     - include_tasks: tasks/create-qcow2.yml
       when:
-        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+        - cloud_platform == "aws" or cloud_platform == "gcp" or cloud_platform == "azure" or cloud_platform == "openstack"
 
 - hosts: openstack
   gather_facts: no
@@ -29,7 +30,7 @@
   tasks:
     - include_tasks: tasks/clean-openstack.yml
       when:
-        - cloud_platform == "aws" or cloud_platform == "azure" or cloud_platform == "openstack"
+        - cloud_platform == "aws" or cloud_platform == "gcp" or cloud_platform == "azure" or cloud_platform == "openstack"
         - arch == "x86_64"
 
 - hosts: beaker
@@ -64,3 +65,11 @@
     - include_tasks: tasks/build-esxi.yml
       when:
         - cloud_platform == "esxi"
+
+- hosts: gcp
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/upload-gcp.yml
+      when:
+        - cloud_platform == "gcp"

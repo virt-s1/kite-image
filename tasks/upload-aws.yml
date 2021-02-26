@@ -195,7 +195,7 @@
     profile: "{{ aws_profile }}"
     region: "{{ aws_region }}"
     instance: "{{ ec2_instance.instance_ids[0] }}"
-    name: image_snapshot
+    name: "vol_for_{{ ec2_instance.instance_ids[0] }}"
     device_name: /dev/sdb
     zone: "{{ ec2_zones.availability_zones[-2].zone_name }}"
     volume_size: "12"
@@ -240,6 +240,17 @@
     state: absent
     wait: yes
 
+# security group can be deleted only when instance state is at terminated
+# and can't be deleted if instance state is at shutting-down
+- name: wait until instance terminated
+  ec2_instance_info:
+    instance_ids:
+      - "{{ ec2_instance.instance_ids[0] }}"
+  register: result_instance_status
+  retries: 30
+  delay: 10
+  until: result_instance_status.instances[0].state.name == "terminated"
+
 - name: make snapshot of attached volume
   ec2_snapshot:
     profile: "{{ aws_profile }}"
@@ -277,6 +288,13 @@
 
 - debug:
     var: ec2_ami
+
+- name: deatch the 2nd EBS volume
+  ec2_vol:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    id: "{{ ec2_volume.volume_id }}"
+    instance: None
 
 - name: delete the 2nd EBS volume
   ec2_vol:
@@ -372,6 +390,17 @@
         instance_ids: "{{ test_ec2_instance.instance_ids[0] }}"
         state: absent
         wait: yes
+
+    # security group can be deleted only when instance state is at terminated
+    # and can't be deleted if instance state is at shutting-down
+    - name: wait until instance terminated
+      ec2_instance_info:
+        instance_ids:
+          - "{{ test_ec2_instance.instance_ids[0] }}"
+      register: result_instance_status
+      retries: 30
+      delay: 10
+      until: result_instance_status.instances[0].state.name == "terminated"
 
     - name: delete keypair
       ec2_key:

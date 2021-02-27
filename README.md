@@ -1,6 +1,6 @@
 # kite-image
 
-kite-image is one of sub-projects of kite, which is to run Linux application or kernel test on public and private cloud platform, such as AWS EC2, VMWare ESXi, OpenStck, Azure, etc.
+kite-image is one of sub-projects of kite, which is to run Linux application or kernel test on public and private cloud platform, such as VMWare ESXi, OpenStck, AWS EC2, Google Cloud Platform, Azure, etc.
 
 kite-image will help to build public and private cloud image.
 
@@ -16,6 +16,7 @@ kite-image will build/update images for different cloud platforms weekly.
 | AWS EC2 AMI SSM (x86_64) | `kite_imagebuild_rhel-8-0_x86_64` | `kite_imagebuild_rhel-8-1_x86_64` | `kite_imagebuild_rhel-8-2_x86_64` | `kite_imagebuild_rhel-8-3_x86_64` | `kite_imagebuild_rhel-8-4_x86_64` |
 | AWS EC2 AMI SSM (ARM64) | `kite_imagebuild_rhel-8-0_aarch64` | `kite_imagebuild_rhel-8-1_aarch64` | `kite_imagebuild_rhel-8-2_aarch64` | `kite_imagebuild_rhel-8-3_aarch64` | `kite_imagebuild_rhel-8-4_aarch64` |
 | Openstack | `x` | `x` | `x` | ` kite-openstack-rhel-8-3 ` | ` kite-openstack-rhel-8-4 ` |
+| Google Cloud Platform | `kite-image-rhel-8-0-x86-64` | `kite-image-rhel-8-1-x86-64` | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` |
 
 
 ### Image Building
@@ -24,13 +25,17 @@ Build ESXi image with:
 
     ansible-playbook -v -i inventory -e cloud_platform=esxi build.yaml
 
+Build Openstack qcow2 image with:
+
+    ansible-playbook -v -i inventory -e cloud_platform=openstack build.yaml
+
 Build AWS EC2 AMI image with:
 
     ansible-playbook -v -i inventory -e cloud_platform=aws build.yaml
 
-Build Openstack qcow2 image with:
+Build Google Cloud Platform image with:
 
-    ansible-playbook -v -i inventory -e cloud_platform=openstack build.yaml
+    ansible-playbook -v -i inventory -e cloud_platform=gcp build.yaml
 
 ## kite-deploy configuration
 
@@ -68,3 +73,11 @@ You can set these environment variables to configure to run kite-image
     AWS_SECRET_KEY    AWS secret key for AWS API authentication
 
     AWS_REGION        AWS region
+
+    GCP_PROJECT       Google Cloud Platform project name
+
+    GCP_SERVICE_ACCOUNT_NAME    Google Cloud Platform service account name
+
+    GCP_SERVICE_ACCOUNT_FILE    Google Cloud Platform service account file path
+
+    GCP_STORAGE_BUCKET_NAME     Google Cloud Platform storage bucket name

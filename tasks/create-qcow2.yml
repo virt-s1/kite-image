@@ -40,8 +40,20 @@
   command: /home/fedora/virt-install-image /home/fedora/{{ os }}_{{ arch }}.qcow2 {{ os }}_{{ arch }}.ks {{ repos[os][arch]["baseos"] }}
 
 - name: "convert qcow2 to {{ image_type[cloud_platform] }}"
-  command: qemu-img convert -O {{ image_type[cloud_platform] }} /home/fedora/{{ os }}_{{ arch }}.qcow2 /home/fedora/{{ os }}.{{ image_type[cloud_platform] }}
+  command: qemu-img convert -O {{ image_type[cloud_platform] }} /home/fedora/{{ os }}_{{ arch }}.qcow2 /home/fedora/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}
   when: cloud_platform == "azure"
+
+- name: "convert {{ os }}_{{ arch }}.qcow2 to raw"
+  command: /usr/bin/qemu-img convert -O raw /home/fedora/{{ os }}_{{ arch }}.qcow2 /home/fedora/disk.raw
+  when: cloud_platform == "gcp"
+
+# archive module does not support --format=oldgnu which is required by GCP
+# https://cloud.google.com/compute/docs/import/import-existing-image#requirements_for_the_image_file
+- name: compress raw to .tar.gz
+  command: tar --format=oldgnu -Sczf {{ os }}_{{ arch }}.tar.gz disk.raw
+  args:
+    chdir: /home/fedora
+  when: cloud_platform == "gcp"
 
 - name: fetch image back
   fetch:

@@ -1,19 +1,28 @@
 pipeline {
     agent {
         node {
-            label 'container-fedora-33-prod'
+            label 'container-fedora-33-stage'
         }
     }
     stages {
-         stage("build gcp rhel image") {
-             steps {
-                 withCredentials([string(credentialsId: 'gcp-project', variable: 'GCP_PROJECT'), string(credentialsId: 'gcp-service-account-name', variable: 'GCP_SERVICE_ACCOUNT_NAME'), file(credentialsId: 'gcp-service-account-file', variable: 'GCP_SERVICE_ACCOUNT_FILE'), string(credentialsId: 'gcp-storage-bucket-name', variable: 'GCP_STORAGE_BUCKET_NAME'), string(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASSWORD')]) {
-                     sh label: 'build image', script: """
-                         ansible-playbook -v -i inventory -e cloud_platform=gcp build.yaml
-                     """
-                 }
-             }
-         }
+        stage("ensure /usr/bin/gcloud exist") {
+            steps {
+                sh label: 'run shell sceipt', script: """
+                    while true; do
+                        test -f /usr/bin/gcloud && break
+                    done
+                """
+            }
+        }
+        stage("build gcp rhel image") {
+            steps {
+                withCredentials([string(credentialsId: 'gcp-project', variable: 'GCP_PROJECT'), string(credentialsId: 'gcp-service-account-name', variable: 'GCP_SERVICE_ACCOUNT_NAME'), file(credentialsId: 'gcp-service-account-file', variable: 'GCP_SERVICE_ACCOUNT_FILE'), string(credentialsId: 'gcp-storage-bucket-name', variable: 'GCP_STORAGE_BUCKET_NAME'), string(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASSWORD')]) {
+                    sh label: 'build image', script: """
+                        ansible-playbook -v -i inventory -e cloud_platform=gcp build.yaml
+                    """
+                }
+            }
+        }
     }
     options {
         timestamps()

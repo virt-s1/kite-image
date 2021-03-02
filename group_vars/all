@@ -42,6 +42,13 @@ repos:
     aarch64:
       baseos: http://download.devel.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.4.0/compose/BaseOS/aarch64/os/
       appstream: http://download.devel.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.4.0/compose/AppStream/aarch64/os/
+  rhel-8-5:
+    x86_64:
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/x86_64/os/
+    aarch64:
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/aarch64/os/
 
 image_type:
   aws: qcow2

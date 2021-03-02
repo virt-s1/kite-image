@@ -9,32 +9,32 @@ os: "{{ lookup('env', 'TEST_OS') }}"
 repos:
   rhel-8-0:
     x86_64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.0/compose/BaseOS/x86_64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.0/compose/AppStream/x86_64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/AppStream/x86_64/os/
     aarch64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.0/compose/BaseOS/aarch64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.0/compose/AppStream/aarch64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/AppStream/aarch64/os/
   rhel-8-1:
     x86_64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.1/compose/BaseOS/x86_64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.1/compose/AppStream/x86_64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/AppStream/x86_64/os/
     aarch64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.1/compose/BaseOS/aarch64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.1/compose/AppStream/aarch64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/AppStream/aarch64/os/
   rhel-8-2:
     x86_64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.2/compose/BaseOS/x86_64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.2/compose/AppStream/x86_64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.2.1/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.2.1/compose/AppStream/x86_64/os/
     aarch64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.2/compose/BaseOS/aarch64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.2/compose/AppStream/aarch64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.2.1/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.2.1/compose/AppStream/aarch64/os/
   rhel-8-3:
     x86_64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.3.0/compose/BaseOS/x86_64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.3.0/compose/AppStream/x86_64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.3.1/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.3.1/compose/AppStream/x86_64/os/
     aarch64:
-      baseos: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.3.0/compose/BaseOS/aarch64/os/
-      appstream: http://download.devel.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.3.0/compose/AppStream/aarch64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.3.1/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.3.1/compose/AppStream/aarch64/os/
   rhel-8-4:
     x86_64:
       baseos: http://download.devel.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.4.0/compose/BaseOS/x86_64/os/

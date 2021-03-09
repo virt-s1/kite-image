@@ -156,6 +156,9 @@
         msg: "building aws ami {{ os }} {{ arch }} fail"
 
   always:
+    - name: check and save the progress of an instance using
+      shell: /usr/bin/gcloud compute instances get-serial-port-output {{ test_instance_name }} --zone=us-central1-a --project={{ gcp_project }} > {{ test_instance_name }}.serial.log
+
     - name: "delete tmp image {{ image_name }}-tmp"
       command: /usr/bin/gcloud compute images delete {{ image_name }}-tmp --project={{ gcp_project }}
 

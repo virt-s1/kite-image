@@ -24,6 +24,11 @@ pipeline {
             }
         }
     }
+    post {
+        always {
+            archiveArtifacts allowEmptyArchive: true, artifacts: '*.serial.log'
+        }
+    }
     options {
         timestamps()
         timeout(time: 3, unit: 'HOURS')

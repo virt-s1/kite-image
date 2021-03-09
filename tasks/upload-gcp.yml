@@ -29,10 +29,11 @@
   when:
     - os != "rhel-8-0"
     - os != "rhel-8-1"
+    - os != "rhel-8-2"
 
 - name: create image for test
   command: /usr/bin/gcloud compute images create {{ image_name }}-tmp --source-uri gs://{{ gcp_storage_bucket_name }}/{{ os }}_{{ arch }}.tar.gz --guest-os-features="UEFI_COMPATIBLE,VIRTIO_SCSI_MULTIQUEUE" --project={{ gcp_project }} --labels=kite=kite-imagebuild-{{ os }}-{{ arch }}
-  when: os == "rhel-8-0" or os == "rhel-8-1"
+  when: os == "rhel-8-0" or os == "rhel-8-1" or os == "rhel-8-2"
 
 # image somking test
 - block:
@@ -46,7 +47,7 @@
     # Both SEV and GVNIC are not supported by rhel-8-0 and rhel-8-1
     - set_fact:
         instance_create_args: ""
-      when: os == "rhel-8-0" or os == "rhel-8-1"
+        when: os == "rhel-8-0" or os == "rhel-8-1" or os == "rhel-8-2"
 
     - name: create features enabled instance for testing
       command: /usr/bin/gcloud compute instances create {{ test_instance_name }} --zone=us-central1-a --machine-type=n2d-standard-2 --boot-disk-auto-delete --boot-disk-size=20GB --boot-disk-type=pd-ssd --labels=kite=image-test-{{ os }}-{{ arch }} --metadata-from-file=ssh-keys=key/gcp-ssh-key --metadata=block-project-ssh-keys=TRUE --preemptible --image={{ image_name }}-tmp --service-account={{ gcp_service_account_name }} {{ instance_create_args }} --project={{ gcp_project }} --format=json
@@ -91,6 +92,7 @@
       when:
         - os != "rhel-8-0"
         - os != "rhel-8-1"
+        - os != "rhel-8-2"
 
     - name: SEV not support building gcp image fail
       fail:
@@ -98,6 +100,7 @@
       when:
         - os != "rhel-8-0"
         - os != "rhel-8-1"
+        - os != "rhel-8-2"
         - "'SEV' not in result_sev.stdout"
 
     # https://cloud.google.com/compute/docs/networking/using-gvnic#verify-gvnic
@@ -109,6 +112,7 @@
       when:
         - os != "rhel-8-0"
         - os != "rhel-8-1"
+        - os != "rhel-8-2"
 
     - name: GVNIC not support building gcp image fail
       fail:
@@ -116,6 +120,7 @@
       when:
         - os != "rhel-8-0"
         - os != "rhel-8-1"
+        - os != "rhel-8-2"
         - "'gVNIC' not in result_gvnic.stdout"
 
     # https://cloudinit.readthedocs.io/en/latest/topics/modules.html#growpart

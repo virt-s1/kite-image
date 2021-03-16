@@ -47,7 +47,7 @@
     # Both SEV and GVNIC are not supported by rhel-8-0 and rhel-8-1
     - set_fact:
         instance_create_args: ""
-        when: os == "rhel-8-0" or os == "rhel-8-1" or os == "rhel-8-2"
+      when: os == "rhel-8-0" or os == "rhel-8-1" or os == "rhel-8-2"
 
     - name: create features enabled instance for testing
       command: /usr/bin/gcloud compute instances create {{ test_instance_name }} --zone=us-central1-a --machine-type=n2d-standard-2 --boot-disk-auto-delete --boot-disk-size=20GB --boot-disk-type=pd-ssd --labels=kite=image-test-{{ os }}-{{ arch }} --metadata-from-file=ssh-keys=key/gcp-ssh-key --metadata=block-project-ssh-keys=TRUE --preemptible --image={{ image_name }}-tmp --service-account={{ gcp_service_account_name }} {{ instance_create_args }} --project={{ gcp_project }} --format=json

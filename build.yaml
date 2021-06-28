@@ -73,3 +73,11 @@
     - include_tasks: tasks/upload-gcp.yml
       when:
         - cloud_platform == "gcp"
+
+- hosts: azure
+  gather_facts: no
+  become: no
+  tasks:
+    - include_tasks: tasks/upload-azure.yml
+      when:
+        - cloud_platform == "azure"

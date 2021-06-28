@@ -1,0 +1,38 @@
+pipeline {
+    agent {
+        node {
+            label 'container-fedora-34-stage'
+        }
+    }
+    stages {
+        stage("ensure /usr/bin/az exist") {
+            steps {
+                sh label: 'run shell sceipt', script: """
+                    while true; do
+                        test -f /usr/bin/az && break
+                    done
+                """
+            }
+        }
+        stage("build azure rhel image") {
+            steps {
+                withCredentials([string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'), string(credentialsId: 'azure-secret', variable: 'AZURE_SECRET'), string(credentialsId: 'azure-subscription-id', variable: 'AZURE_SUBSCRIPTION_ID'), string(credentialsId: 'azure-tenant', variable: 'AZURE_TENANT'), string(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASSWORD')]) {
+                    sh label: 'build image', script: """
+                        printenv
+                        ansible-playbook -v -i inventory -e cloud_platform=azure build.yaml
+                    """
+                }
+            }
+            post {
+                failure {
+                    archiveArtifacts allowEmptyArchive: true, artifacts: '*screenshot.bmp'
+                    archiveArtifacts allowEmptyArchive: true, artifacts: '*serial-console.log'
+                }
+            }
+        }
+    }
+    options {
+        timestamps()
+        timeout(time: 3, unit: 'HOURS')
+    }
+}

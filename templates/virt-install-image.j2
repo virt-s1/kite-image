@@ -20,7 +20,7 @@ cleanup_builder_vm () {
         virsh $connect destroy $name
     fi
     if virsh $connect list --all --name | grep -q $name; then
-{% if arch == "aarch64" or cloud_platform == "gcp" %}
+{% if arch == "aarch64" or cloud_platform == "gcp" or cloud_platform == "azure" %}
         virsh $connect undefine $name --nvram
 {% else %}
         virsh $connect undefine $name
@@ -50,9 +50,9 @@ cleanup_builder_vm
 
 supervised_virt_install $connect \
                         --initrd-inject=$ks \
-                        --extra-args="ks=file:/$ks console=ttyS0,115200" \
+                        --extra-args="inst.ks=file:/$ks console=ttyS0,115200" \
                         --name=$name \
-{% if arch == "aarch64" or cloud_platform == "gcp" %}
+{% if arch == "aarch64" or cloud_platform == "gcp"  or cloud_platform == "azure" %}
                         --boot uefi \
 {% endif %}
                         --disk "path=$out,format=qcow2" \

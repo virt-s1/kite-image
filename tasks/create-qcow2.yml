@@ -28,7 +28,7 @@
     src: "rhel-8-{{ cloud_platform }}-ks-cfg.j2"
     dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
   when:
-    - cloud_platform == "openstack" or cloud_platform == "gcp"
+    - cloud_platform == "openstack" or cloud_platform == "gcp" or cloud_platform == "azure"
 
 - name: generate virt-install-image shell script
   template:
@@ -40,7 +40,13 @@
   command: /home/fedora/virt-install-image /home/fedora/{{ os }}_{{ arch }}.qcow2 {{ os }}_{{ arch }}.ks {{ repos[os][arch]["baseos"] }}
 
 - name: "convert qcow2 to {{ image_type[cloud_platform] }}"
-  command: qemu-img convert -O {{ image_type[cloud_platform] }} /home/fedora/{{ os }}_{{ arch }}.qcow2 /home/fedora/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}
+  shell: |
+    qemu-img convert -f qcow2 -O raw /home/fedora/{{ os }}_{{ arch }}.qcow2 /home/fedora/{{ os }}_{{ arch }}.raw
+    MB=$((1024*1024))
+    size=$(qemu-img info -f raw --output json /home/fedora/{{ os }}_{{ arch }}.raw | gawk 'match($0, /"virtual-size": ([0-9]+),/, val) {print val[1]}')
+    rounded_size=$((($size/$MB + 1)*$MB))
+    qemu-img resize -f raw /home/fedora/{{ os }}_{{ arch }}.raw $rounded_size
+    qemu-img convert -f raw -o subformat=fixed,force_size -O vpc /home/fedora/{{ os }}_{{ arch }}.raw /home/fedora/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}
   when: cloud_platform == "azure"
 
 - name: "convert {{ os }}_{{ arch }}.qcow2 to raw"

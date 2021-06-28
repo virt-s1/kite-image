@@ -1,0 +1,163 @@
+---
+# - name: create resource group
+#   azure_rm_resourcegroup:
+#     name: kite_upload_image_rg
+#     auth_source: env
+#     location: eastus
+#     tags:
+#       kite: "kite.imagebuild"
+
+# - name: create storage account
+#   azure_rm_storageaccount:
+#     name: kiteuploadimage
+#     resource_group: kite_upload_image_rg
+#     auth_source: env
+#     access_tier: Hot
+#     account_type: Standard_LRS
+#     kind: StorageV2
+#     location: eastus
+#     tags:
+#       kite: "kite.imagebuild"
+
+# - name: create container and upload image
+#   azure_rm_storageblob:
+#     resource_group: kite_upload_image_rg
+#     storage_account_name: kiteuploadimage
+#     auth_source: env
+#     container: kite
+#     blob: "{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+#     blob_type: page
+#     src: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+#     public_access: container
+#     content_type: "application/octet-stream"
+#     tags:
+#       kite: "kite.imagebuild"
+
+# - name: "create tmp {{ os }}-{{ arch }} image"
+#   azure_rm_image:
+#     name: "tmp-{{ os }}-{{ arch }}"
+#     resource_group: kite_upload_image_rg
+#     auth_source: env
+#     location: eastus
+#     os_type: Linux
+#     source: "https://kiteuploadimage.blob.core.windows.net/kite/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+#     tags:
+#       kite: "kite.imagebuild"
+#   register: result_image
+#   until: result_image is success
+#   retries: 5
+#   delay: 60
+
+# # Run VM to test new image
+# - name: create virtual network
+#   azure_rm_virtualnetwork:
+#     name: kite_image_test_virt_net
+#     resource_group: kite_upload_image_rg
+#     address_prefixes: "172.30.0.0/16"
+
+# - name: add subnet
+#   azure_rm_subnet:
+#     name: kite_image_test_subnet
+#     resource_group: kite_upload_image_rg
+#     address_prefix: "172.30.30.0/24"
+#     virtual_network: kite_image_test_virt_net
+
+# - name: create public ip
+#   azure_rm_publicipaddress:
+#     name: kite_image_test_pub_ip
+#     resource_group: kite_upload_image_rg
+#     allocation_method: Static
+
+# - name: create security group that allows SSH
+#   azure_rm_securitygroup:
+#     name: kite_image_test_sec_group
+#     resource_group: kite_upload_image_rg
+#     rules:
+#       - name: SSH
+#         protocol: Tcp
+#         destination_port_range: 22
+#         access: Allow
+#         priority: 101
+#         direction: Inbound
+
+# - name: create NIC
+#   azure_rm_networkinterface:
+#     name: kite_image_test_nic
+#     resource_group: kite_upload_image_rg
+#     virtual_network: kite_image_test_virt_net
+#     subnet: kite_image_test_subnet
+#     public_ip_name: kite_image_test_pub_ip
+#     security_group: kite_image_test_sec_group
+
+- name: create VM
+  azure_rm_virtualmachine:
+    name: kite-image-test-vm
+    auth_source: env
+    image:
+      name: "tmp-rhel-8-5-x86_64"
+      resource_group: kite_upload_image_rg
+    vm_size: Standard_F4s_v2
+    os_type: Linux
+    resource_group: kite_upload_image_rg
+    storage_account_name: kiteuploadimage
+    storage_container_name: kite
+    network_interface_names: kite_image_test_nic
+    os_disk_name: disk-kite
+    custom_data: |
+      #cloud-config
+      users:
+        - default
+        - name: admin
+          gecos: Administrator
+          groups: users,wheel
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          ssh_authorized_keys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMiTGemx2gjWkPCApWZHblN34WaD3cIiuv6zU1S4dtSumR3NeCdUnA9fBgDGyKErIbxtI1XICoLCulv7zPQuUNa/H/iv1yyH2o+5ZuQe8sLtX5bO0nfVdBWSWQu0EMgyaHrPnt642Cby91YLjX8AVkfRPczHkE3mRTJpkYmdeYRPZqNe6+o9A4LVa5/ZNEgzQLs2fXAJlQWP24nueRm8ypdHt0HvZa4wsHELaG7AXlcz3pmg+4I256UG2f5Y99k10CqAYteRtILrR3oXary9pDd4tg9/aCS3T7GYZGi8l5CdZ2LZwHf6pLZM/O9Lf4rjDysyfPw7RZ2uwF0SRpDfUrqrufgEHCLtfADfYg0qf/iulGoLaM3OTI+Jbyra2JXP1tlzyOUUDm1dwABRTcQvujSYrdnJM4M4BHo3ca1U8Fkh/KgjVahfIYH0kx+FjT964lJAJfxU0O3nnsytiEghLk1DuHta6VNuTRehF5gbhNC2Cc6yqbSZ+lp68bU4dRDm0= kite-test
+          ssh_pwauth: False
+    admin_username: adminUser
+    ssh_password_enabled: false
+    ssh_public_keys:
+      - path: /home/adminUser/.ssh/authorized_keys
+        key_data: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMiTGemx2gjWkPCApWZHblN34WaD3cIiuv6zU1S4dtSumR3NeCdUnA9fBgDGyKErIbxtI1XICoLCulv7zPQuUNa/H/iv1yyH2o+5ZuQe8sLtX5bO0nfVdBWSWQu0EMgyaHrPnt642Cby91YLjX8AVkfRPczHkE3mRTJpkYmdeYRPZqNe6+o9A4LVa5/ZNEgzQLs2fXAJlQWP24nueRm8ypdHt0HvZa4wsHELaG7AXlcz3pmg+4I256UG2f5Y99k10CqAYteRtILrR3oXary9pDd4tg9/aCS3T7GYZGi8l5CdZ2LZwHf6pLZM/O9Lf4rjDysyfPw7RZ2uwF0SRpDfUrqrufgEHCLtfADfYg0qf/iulGoLaM3OTI+Jbyra2JXP1tlzyOUUDm1dwABRTcQvujSYrdnJM4M4BHo3ca1U8Fkh/KgjVahfIYH0kx+FjT964lJAJfxU0O3nnsytiEghLk1DuHta6VNuTRehF5gbhNC2Cc6yqbSZ+lp68bU4dRDm0= kite-test
+  register: test_vm
+
+# image somking test
+- block:
+    - set_fact:
+        instance_ip: "{{ test_vm.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces[0].properties.ipConfigurations[0].properties.publicIPAddress.properties.ipAddress }}"
+
+    - name: waits until ssh is reachable
+      wait_for:
+        host: "{{ instance_ip }}"
+        port: 22
+        search_regex: OpenSSH
+        delay: 10
+
+    - name: add instance to guest group
+      add_host:
+        name: "{{ instance_ip }}"
+        group: guest
+
+    - name: keep private key permission to 600
+      file:
+        path: "{{ playbook_dir }}/key/identity"
+        mode: "0600"
+
+    - name: ensure cloud-init has finished
+      raw: test -f /var/lib/cloud/instance/boot-finished
+      retries: 60
+      register: cloud_init_check
+      changed_when: false
+      until: cloud_init_check is success
+      delegate_to: "{{ instance_ip }}"
+
+    - name: check /opt/ltp/runltp exist or not
+      stat:
+        path: /opt/ltp/runltp
+      register: result_stat
+      delegate_to: "{{ instance_ip }}"
+
+    - name: building gcp image fail
+      fail:
+        msg: "building gcp image {{ os }} {{ arch }} fail"
+      when: not result_stat.stat.exists

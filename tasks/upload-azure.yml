@@ -108,6 +108,7 @@
         storage_container_name: kite
         network_interface_names: kite_image_test_nic
         os_disk_name: disk-kite
+        os_disk_size_gb: 20
         boot_diagnostics:
           enabled: yes
         custom_data: |
@@ -167,6 +168,18 @@
         msg: "building azure image {{ os }} {{ arch }} fail"
       when: not result_stat.stat.exists
 
+    # 10G image will be resized to 20G (disk size)
+    - name: disk growpart feature checking
+      command: df -h
+      become: yes
+      register: result_growpart
+      delegate_to: "{{ instance_ip }}"
+
+    - name: disk growpart not support building gcp image fail
+      fail:
+        msg: "can't find disk growpart support, gcp image {{ os }} {{ arch }} fail"
+      when: "'20G' not in result_growpart.stdout"
+
   rescue:
     - name: sign in with azure service principle
       command: /usr/bin/az login --service-principal -u {{ azure_client_id }} -p {{ azure_secret }} --tenant {{ azure_tenant }}
@@ -188,6 +201,10 @@
       get_url:
         url: "{{ seriallog_uri }}"
         dest: "{{ playbook_dir }}/image-building-failure-serial-console.log"
+
+    - name: building azure image fail
+      fail:
+        msg: "building azure image {{ os }} {{ arch }} fail"
 
   always:
     - name: "delete resource group kite_upload_image_rg"

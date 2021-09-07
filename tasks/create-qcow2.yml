@@ -23,11 +23,20 @@
   when:
     - cloud_platform == "aws"
 
-- name: generate kickstart file for openstack image
+- name: "generate kickstart file for {{ cloud_platform }} {{ os }} image"
   template:
     src: "rhel-8-{{ cloud_platform }}-ks-cfg.j2"
     dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
   when:
+    - "'rhel-8' in os"
+    - cloud_platform == "openstack" or cloud_platform == "gcp" or cloud_platform == "azure"
+
+- name: "generate kickstart file for {{ cloud_platform }} {{ os }} image"
+  template:
+    src: "rhel-9-{{ cloud_platform }}-ks-cfg.j2"
+    dest: "/home/fedora/{{ os }}_{{ arch }}.ks"
+  when:
+    - "'rhel-9' in os"
     - cloud_platform == "openstack" or cloud_platform == "gcp" or cloud_platform == "azure"
 
 - name: generate virt-install-image shell script

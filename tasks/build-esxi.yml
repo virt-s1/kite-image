@@ -47,6 +47,15 @@
   template:
     src: rhel-8-esxi-ks-cfg.j2
     dest: "{{ playbook_dir }}/ks.cfg"
+  when:
+    - "'rhel-8' in os"
+
+- name: create kickstart file
+  template:
+    src: rhel-9-esxi-ks-cfg.j2
+    dest: "{{ playbook_dir }}/ks.cfg"
+  when:
+    - "'rhel-9' in os"
 
 - name: create kickstart iso
   command: mkisofs -V "OEMDRV" -o "{{ playbook_dir }}/ks-{{ os }}-{{ esxi_firmware }}.iso" "{{ playbook_dir  }}/ks.cfg"

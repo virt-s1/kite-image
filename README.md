@@ -10,13 +10,14 @@ kite-image will build/update images for different cloud platforms weekly.
 
 **Images**
 
-| Cloud Platform | RHEL 8.0.z | RHEL 8.1.z | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.y |
-| ---- | ---- | ---- | ---- | ---- | ---- |
-| VMWare ESXi 7.0 | `template-rhel-8-0-bios`/`template-rhel-8-0-efi` | `template-rhel-8-1-bios`/`template-rhel-8-1-efi` | `template-rhel-8-2-bios`/`template-rhel-8-2-efi` | `template-rhel-8-3-bios`/`template-rhel-8-3-efi` | `template-rhel-8-4-bios`/`template-rhel-8-4-efi` |
-| AWS EC2 AMI SSM (x86_64) | `kite_imagebuild_rhel-8-0_x86_64` | `kite_imagebuild_rhel-8-1_x86_64` | `kite_imagebuild_rhel-8-2_x86_64` | `kite_imagebuild_rhel-8-3_x86_64` | `kite_imagebuild_rhel-8-4_x86_64` |
-| AWS EC2 AMI SSM (ARM64) | `kite_imagebuild_rhel-8-0_aarch64` | `kite_imagebuild_rhel-8-1_aarch64` | `kite_imagebuild_rhel-8-2_aarch64` | `kite_imagebuild_rhel-8-3_aarch64` | `kite_imagebuild_rhel-8-4_aarch64` |
-| Openstack | `kite-openstack-rhel-8-0` | `kite-openstack-rhel-8-1` | `kite-openstack-rhel-8-2` | `kite-openstack-rhel-8-3` | `kite-openstack-rhel-8-4` |
-| Google Cloud Platform | `kite-image-rhel-8-0-x86-64` | `kite-image-rhel-8-1-x86-64` | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` |
+| Cloud Platform | RHEL 8.1.z | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.4.z | RHEL 8.y | RHEL 9.y |
+| ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| VMWare ESXi 7.0 |  `template-rhel-8-1-bios`/`template-rhel-8-1-efi` | `template-rhel-8-2-bios`/`template-rhel-8-2-efi` | `template-rhel-8-3-bios`/`template-rhel-8-3-efi` | `template-rhel-8-4-bios`/`template-rhel-8-4-efi` | `template-rhel-8-5-bios`/`template-rhel-8-5-efi` | `template-rhel-9-0-bios`/`template-rhel-9-0-efi` |
+| AWS EC2 AMI SSM (x86_64) |  `kite_imagebuild_rhel-8-1_x86_64` | `kite_imagebuild_rhel-8-2_x86_64` | `kite_imagebuild_rhel-8-3_x86_64` | `kite_imagebuild_rhel-8-4_x86_64` | `kite_imagebuild_rhel-8-5_x86_64` | `kite_imagebuild_rhel-9-0_x86_64` |
+| AWS EC2 AMI SSM (ARM64) |  `kite_imagebuild_rhel-8-1_aarch64` | `kite_imagebuild_rhel-8-2_aarch64` | `kite_imagebuild_rhel-8-3_aarch64` | `kite_imagebuild_rhel-8-4_aarch64` | `kite_imagebuild_rhel-8-5_aarch64` | `kite_imagebuild_rhel-9-0_aarch64` |
+| Openstack |  `kite-openstack-rhel-8-1` | `kite-openstack-rhel-8-2` | `kite-openstack-rhel-8-3` | `kite-openstack-rhel-8-4` | `kite-openstack-rhel-8-5` | `kite-openstack-rhel-9-0` |
+| Google Cloud Platform |  `kite-image-rhel-8-1-x86-64` | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` | `kite-image-rhel-8-5-x86-64` | `kite-image-rhel-9-0-x86-64` |
+| Azure | `rhel-8-1-x86_64` | `rhel-8-2-x86_64` | `rhel-8-3-x86_64` | `rhel-8-4-x86_64` | `rhel-8-5-x86_64` | `rhel-9-0-x86_64` |
 
 
 ### Image Building
@@ -37,20 +38,25 @@ Build Google Cloud Platform image with:
 
     ansible-playbook -v -i inventory -e cloud_platform=gcp build.yaml
 
+Build Azure image with:
+
+    ansible-playbook -v -i inventory -e cloud_platform=azure build.yaml
+
 ## kite-deploy configuration
 
 You can set these environment variables to configure to run kite-image
 
     TEST_OS           The OS to run the tests in. Currently supported values:
-                          "rhel-8-0"
                           "rhel-8-1"
                           "rhel-8-2"
                           "rhel-8-3"
                           "rhel-8-4"
+                          "rhel-8-5"
+                          "rhel-9-0"
 
     ARCH              Image architecture
                           "x86_64"
-                          "aarch64"
+                          "aarch64"(AWS ONLY)
 
     VSPHERE_SERVER    The vSphere server hostname or IP address
 
@@ -81,3 +87,11 @@ You can set these environment variables to configure to run kite-image
     GCP_SERVICE_ACCOUNT_FILE    Google Cloud Platform service account file path
 
     GCP_STORAGE_BUCKET_NAME     Google Cloud Platform storage bucket name
+
+    AZURE_CLIENT_ID             Azure principle account client id
+
+    AZURE_SECRET                Azure principle account secret
+
+    AZURE_SUBSCRIPTION_ID       Azure principle account subscription id
+
+    AZURE_TENANT                Azure principle account tenant

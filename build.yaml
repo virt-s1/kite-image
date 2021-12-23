@@ -6,7 +6,6 @@
     - include_tasks: tasks/prepare-openstack.yml
       when:
         - cloud_platform == "aws" or cloud_platform == "gcp" or cloud_platform == "azure" or cloud_platform == "openstack"
-
         - arch == "x86_64"
 
 - hosts: beaker

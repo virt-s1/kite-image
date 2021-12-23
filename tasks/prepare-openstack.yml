@@ -3,37 +3,24 @@
   set_fact:
     random_number: "{{ 99 | random(start=11) }}"
 
-- name: create openstack configuration folder
-  file:
-    path: ~/.config/openstack
-    state: directory
-
-- name: set vault password file
-  copy:
-    content: "{{ lookup('env', 'VAULT_PASSWORD') }}"
-    dest: "~/.config/ansible-vault"
-
-- name: save clouds.yaml to ~/.config/openstack
-  command: ansible-vault decrypt -v --vault-password-file ~/.config/ansible-vault {{ playbook_dir }}/files/clouds-yaml --output ~/.config/openstack/clouds.yaml
-
 - name: create a new openstack keypair
-  os_keypair:
-    cloud: psi-openstack
+  openstack.cloud.keypair:
+    cloud: rhos-01
     state: present
-    name: kite-image-key
-    public_key_file: "{{ playbook_dir }}/key/identity.pub"
+    name: kite-test
+    public_key_file: key/identity.pub
 
 - name: create security group
-  os_security_group:
-    cloud: psi-openstack
-    name: kite-image
+  openstack.cloud.security_group:
+    cloud: rhos-01
+    name: kite-test
     state: present
     description: security group for kite image build server
 
-- name: set ssh rule for security group kite
-  os_security_group_rule:
-    cloud: psi-openstack
-    security_group: kite-image
+- name: set ssh rule for security group kite-test
+  openstack.cloud.security_group_rule:
+    cloud: rhos-01
+    security_group: kite-test
     protocol: tcp
     port_range_min: 22
     port_range_max: 22
@@ -44,14 +31,14 @@
     instance_name: "kite-image-builder-{{ os }}-{{ random_number }}"
 
 - name: deploy instance
-  os_server:
-    cloud: psi-openstack
+  openstack.cloud.server:
+    cloud: rhos-01
     name: "{{ instance_name }}"
-    image: "{{ images['fedora-33'] }}"
+    image: "{{ images['fedora-34'] }}"
     flavor: "{{ flavor }}"
     network: "{{ network }}"
-    key_name: kite-image-key
-    security_groups: kite-image
+    key_name: kite-test
+    security_groups: kite-test
     auto_ip: yes
     wait: yes
     timeout: 600

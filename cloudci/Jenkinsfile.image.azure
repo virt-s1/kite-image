@@ -16,7 +16,7 @@ pipeline {
         }
         stage("build azure rhel image") {
             steps {
-                withCredentials([string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'), string(credentialsId: 'azure-secret', variable: 'AZURE_SECRET'), string(credentialsId: 'azure-subscription-id', variable: 'AZURE_SUBSCRIPTION_ID'), string(credentialsId: 'azure-tenant', variable: 'AZURE_TENANT'), string(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASSWORD')]) {
+                withCredentials([string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'), string(credentialsId: 'azure-secret', variable: 'AZURE_SECRET'), string(credentialsId: 'azure-subscription-id', variable: 'AZURE_SUBSCRIPTION_ID'), string(credentialsId: 'azure-tenant', variable: 'AZURE_TENANT'), file(credentialsId: 'openstack-clouds-yaml', variable: 'OS_CLIENT_CONFIG_FILE')]) {
                     sh label: 'build image', script: """
                         printenv
                         ansible-playbook -v -i inventory -e cloud_platform=azure build.yaml

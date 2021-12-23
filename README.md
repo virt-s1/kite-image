@@ -10,14 +10,14 @@ kite-image will build/update images for different cloud platforms weekly.
 
 **Images**
 
-| Cloud Platform | RHEL 8.1.z | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.4.z | RHEL 8.y | RHEL 9.y |
+| Cloud Platform | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.4.z | RHEL 8.5.z | RHEL 8.y | RHEL 9.y |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| VMWare ESXi 7.0 |  `template-rhel-8-1-bios`/`template-rhel-8-1-efi` | `template-rhel-8-2-bios`/`template-rhel-8-2-efi` | `template-rhel-8-3-bios`/`template-rhel-8-3-efi` | `template-rhel-8-4-bios`/`template-rhel-8-4-efi` | `template-rhel-8-5-bios`/`template-rhel-8-5-efi` | `template-rhel-9-0-bios`/`template-rhel-9-0-efi` |
-| AWS EC2 AMI SSM (x86_64) |  `kite_imagebuild_rhel-8-1_x86_64` | `kite_imagebuild_rhel-8-2_x86_64` | `kite_imagebuild_rhel-8-3_x86_64` | `kite_imagebuild_rhel-8-4_x86_64` | `kite_imagebuild_rhel-8-5_x86_64` | `kite_imagebuild_rhel-9-0_x86_64` |
-| AWS EC2 AMI SSM (ARM64) |  `kite_imagebuild_rhel-8-1_aarch64` | `kite_imagebuild_rhel-8-2_aarch64` | `kite_imagebuild_rhel-8-3_aarch64` | `kite_imagebuild_rhel-8-4_aarch64` | `kite_imagebuild_rhel-8-5_aarch64` | `kite_imagebuild_rhel-9-0_aarch64` |
-| Openstack |  `kite-openstack-rhel-8-1` | `kite-openstack-rhel-8-2` | `kite-openstack-rhel-8-3` | `kite-openstack-rhel-8-4` | `kite-openstack-rhel-8-5` | `kite-openstack-rhel-9-0` |
-| Google Cloud Platform |  `kite-image-rhel-8-1-x86-64` | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` | `kite-image-rhel-8-5-x86-64` | `kite-image-rhel-9-0-x86-64` |
-| Azure | `rhel-8-1-x86_64` | `rhel-8-2-x86_64` | `rhel-8-3-x86_64` | `rhel-8-4-x86_64` | `rhel-8-5-x86_64` | `rhel-9-0-x86_64` |
+| VMWare ESXi 7.0 | `template-rhel-8-2-bios`/`template-rhel-8-2-efi` | `template-rhel-8-3-bios`/`template-rhel-8-3-efi` | `template-rhel-8-4-bios`/`template-rhel-8-4-efi` | `template-rhel-8-5-bios`/`template-rhel-8-5-efi` | `template-rhel-8-6-bios`/`template-rhel-8-6-efi` | `template-rhel-9-0-bios`/`template-rhel-9-0-efi` |
+| AWS EC2 AMI SSM (x86_64) | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
+| AWS EC2 AMI SSM (ARM64) | `kite-image-rhel-8-2-aarch64` | `kite-image-rhel-8-3-aarch64` | `kite-image-rhel-8-4-aarch64` | `kite-image-rhel-8-5-aarch64` | `kite-image-rhel-8-6-aarch64` | `kite-image-rhel-9-0-aarch64` |
+| Openstack | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
+| Google Cloud Platform | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` | `kite-image-rhel-8-5-x86-64` | `kite-image-rhel-8-6-x86-64` | `kite-image-rhel-9-0-x86-64` |
+| Azure | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
 
 
 ### Image Building
@@ -47,11 +47,11 @@ Build Azure image with:
 You can set these environment variables to configure to run kite-image
 
     TEST_OS           The OS to run the tests in. Currently supported values:
-                          "rhel-8-1"
                           "rhel-8-2"
                           "rhel-8-3"
                           "rhel-8-4"
                           "rhel-8-5"
+                          "rhel-8-6"
                           "rhel-9-0"
 
     ARCH              Image architecture
@@ -72,13 +72,9 @@ You can set these environment variables to configure to run kite-image
 
     ESXI_FIRMWARE     ESXi firmware, bios or efi
 
-    VAULT_PASSWORD    Password to decrypt openstack configuration file
+    OS_CLIENT_CONFIG_FILE       Absolute path of clouds.yaml for OpenStack auth
 
-    AWS_ACCESS_KEY    AWS access key for AWS API authentication
-
-    AWS_SECRET_KEY    AWS secret key for AWS API authentication
-
-    AWS_REGION        AWS region
+    AWS_SHARED_CREDENTIALS_FILE AWS credentials file for AWS auth
 
     GCP_PROJECT       Google Cloud Platform project name
 

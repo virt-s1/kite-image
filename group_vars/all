@@ -7,23 +7,8 @@ os: "{{ lookup('env', 'TEST_OS') }}"
 
 # RHEL internal repos
 # For RHEL 8.1 and 8.2, EUS repo has to be used to install latest grub2 to fix legacy BIOS boot issue when using a config file shared with EFI (bz#1874469)
+# EUS repo: http://rhsm-pulp.corp.redhat.com/content/eus
 repos:
-  rhel-8-0:
-    x86_64:
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/BaseOS/x86_64/os/
-      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/AppStream/x86_64/os/
-    aarch64:
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/BaseOS/aarch64/os/
-      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.0.1/compose/AppStream/aarch64/os/
-  rhel-8-1:
-    x86_64:
-      eusbaseos: http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/8.1/x86_64/baseos/os
-      eusappstream: http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/8.1/x86_64/appstream/os
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/BaseOS/x86_64/os/
-    aarch64:
-      eusbaseos: http://http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/8.1/aarch64/baseos/os/
-      eusappstream: http://http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/8.1/aarch64/appstream/os/
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/latest-RHEL-8.1.1/compose/BaseOS/aarch64/os/
   rhel-8-2:
     x86_64:
       baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/updates/RHEL-8/EUS/latest-RHEL-8.2.0/compose/BaseOS/x86_64/os/
@@ -47,11 +32,18 @@ repos:
       appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.4.0/compose/AppStream/aarch64/os/
   rhel-8-5:
     x86_64:
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/x86_64/os/
-      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/x86_64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/x86_64/os/
     aarch64:
-      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/aarch64/os/
-      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/aarch64/os/
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.5.0/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/latest-RHEL-8.5.0/compose/AppStream/aarch64/os/
+  rhel-8-6:
+    x86_64:
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.6.0/compose/BaseOS/x86_64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.6.0/compose/AppStream/x86_64/os/
+    aarch64:
+      baseos: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.6.0/compose/BaseOS/aarch64/os/
+      appstream: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.6.0/compose/AppStream/aarch64/os/
   rhel-9-0:
     x86_64:
       baseos: http://download-node-02.eng.bos.redhat.com/rhel-9/nightly/RHEL-9/latest-RHEL-9.0.0/compose/BaseOS/x86_64/os/

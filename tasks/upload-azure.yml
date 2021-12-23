@@ -1,6 +1,6 @@
 ---
 - name: create resource group
-  azure_rm_resourcegroup:
+  azure.azcollection.azure_rm_resourcegroup:
     name: kite_upload_image_rg
     auth_source: env
     location: eastus
@@ -8,7 +8,7 @@
       kite: "kite.imagebuild"
 
 - name: create storage account
-  azure_rm_storageaccount:
+  azure.azcollection.azure_rm_storageaccount:
     name: kiteuploadimage
     resource_group: kite_upload_image_rg
     auth_source: env
@@ -20,12 +20,12 @@
       kite: "kite.imagebuild"
 
 - name: create container and upload image
-  azure_rm_storageblob:
+  azure.azcollection.azure_rm_storageblob:
     resource_group: kite_upload_image_rg
     storage_account_name: kiteuploadimage
     auth_source: env
     container: kite
-    blob: "{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    blob: "kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
     blob_type: page
     src: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
     public_access: container
@@ -33,14 +33,14 @@
     tags:
       kite: "kite.imagebuild"
 
-- name: "create tmp {{ os }}-{{ arch }} image"
-  azure_rm_image:
-    name: "tmp-{{ os }}-{{ arch }}"
+- name: "create tmp-kite-image-{{ os }}-{{ arch }} image"
+  azure.azcollection.azure_rm_image:
+    name: "tmp-kite-image-{{ os }}-{{ arch }}"
     resource_group: kite_upload_image_rg
     auth_source: env
     location: eastus
     os_type: Linux
-    source: "https://kiteuploadimage.blob.core.windows.net/kite/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    source: "https://kiteuploadimage.blob.core.windows.net/kite/kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
     tags:
       kite: "kite.imagebuild"
   register: result_image
@@ -50,26 +50,26 @@
 
 # Run VM to test new image
 - name: create virtual network
-  azure_rm_virtualnetwork:
+  azure.azcollection.azure_rm_virtualnetwork:
     name: kite_image_test_virt_net
     resource_group: kite_upload_image_rg
     address_prefixes: "172.30.0.0/16"
 
 - name: add subnet
-  azure_rm_subnet:
+  azure.azcollection.azure_rm_subnet:
     name: kite_image_test_subnet
     resource_group: kite_upload_image_rg
     address_prefix: "172.30.30.0/24"
     virtual_network: kite_image_test_virt_net
 
 - name: create public ip
-  azure_rm_publicipaddress:
+  azure.azcollection.azure_rm_publicipaddress:
     name: kite_image_test_pub_ip
     resource_group: kite_upload_image_rg
     allocation_method: Static
 
 - name: create security group that allows SSH
-  azure_rm_securitygroup:
+  azure.azcollection.azure_rm_securitygroup:
     name: kite_image_test_sec_group
     resource_group: kite_upload_image_rg
     rules:
@@ -81,7 +81,7 @@
         direction: Inbound
 
 - name: create NIC
-  azure_rm_networkinterface:
+  azure.azcollection.azure_rm_networkinterface:
     name: kite_image_test_nic
     resource_group: kite_upload_image_rg
     virtual_network: kite_image_test_virt_net
@@ -95,11 +95,11 @@
 # image somking test
 - block:
     - name: create VM
-      azure_rm_virtualmachine:
+      azure.azcollection.azure_rm_virtualmachine:
         name: kite-image-test-vm
         auth_source: env
         image:
-          name: "tmp-{{ os }}-{{ arch }}"
+          name: "tmp-kite-image-{{ os }}-{{ arch }}"
           resource_group: kite_upload_image_rg
         vm_size: Standard_F4s_v2
         os_type: Linux
@@ -208,7 +208,7 @@
 
   always:
     - name: "delete resource group kite_upload_image_rg"
-      azure_rm_resourcegroup:
+      azure.azcollection.azure_rm_resourcegroup:
         name: kite_upload_image_rg
         auth_source: env
         location: eastus
@@ -217,7 +217,7 @@
 
 # Upload image to persistent resource group
 - name: create resource group
-  azure_rm_resourcegroup:
+  azure.azcollection.azure_rm_resourcegroup:
     name: kite_image
     auth_source: env
     location: eastus
@@ -225,7 +225,7 @@
       kite: "kite.image"
 
 - name: create storage account
-  azure_rm_storageaccount:
+  azure.azcollection.azure_rm_storageaccount:
     name: kiteimage
     resource_group: kite_image
     auth_source: env
@@ -236,29 +236,29 @@
     tags:
       kite: "kite.image"
 
-- name: "delete {{ os }}-{{ arch }} image"
-  azure_rm_image:
-    name: "{{ os }}-{{ arch }}"
+- name: "delete kite-image-{{ os }}-{{ arch }} image"
+  azure.azcollection.azure_rm_image:
+    name: "kite-image-{{ os }}-{{ arch }}"
     resource_group: kite_image
     auth_source: env
     state: absent
 
-- name: "delete old blob {{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
-  azure_rm_storageblob:
+- name: "delete old blob kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
+  azure.azcollection.azure_rm_storageblob:
     resource_group: kite_image
     storage_account_name: kiteimage
     auth_source: env
     container: kite
-    blob: "{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    blob: "kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
     state: absent
 
 - name: create container and upload image
-  azure_rm_storageblob:
+  azure.azcollection.azure_rm_storageblob:
     resource_group: kite_image
     storage_account_name: kiteimage
     auth_source: env
     container: kite
-    blob: "{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    blob: "kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
     blob_type: page
     src: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
     public_access: container
@@ -266,14 +266,14 @@
     tags:
       kite: "kite.image"
 
-- name: "create {{ os }}-{{ arch }} image"
-  azure_rm_image:
-    name: "{{ os }}-{{ arch }}"
+- name: "create kite-image-{{ os }}-{{ arch }} image"
+  azure.azcollection.azure_rm_image:
+    name: "kite-image-{{ os }}-{{ arch }}"
     resource_group: kite_image
     auth_source: env
     location: eastus
     os_type: Linux
-    source: "https://kiteimage.blob.core.windows.net/kite/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
+    source: "https://kiteimage.blob.core.windows.net/kite/kite-image-{{ os }}-{{ arch }}.{{ image_type[cloud_platform] }}"
     tags:
       kite: "kite.image"
   register: result_image

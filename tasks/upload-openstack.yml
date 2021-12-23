@@ -1,8 +1,8 @@
 ---
 - name: upload tmp image to psi openstack
-  os_image:
-    cloud: psi-openstack
-    name: "tmp-kite-openstack-{{ os }}"
+  openstack.cloud.image:
+    cloud: rhos-01
+    name: "tmp-kite-image-{{ os }}"
     filename: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
     # https://docs.openstack.org/glance/latest/admin/useful-image-properties.html
     properties:
@@ -13,14 +13,14 @@
 # image test
 - block:
     - name: deploy image test instance
-      os_server:
-        cloud: psi-openstack
+      openstack.cloud.server:
+        cloud: rhos-01
         name: "kite-image-test-{{ os }}"
-        image: "tmp-kite-openstack-{{ os }}"
+        image: "tmp-kite-image-{{ os }}"
         flavor: "{{ flavor }}"
         network: "{{ network }}"
-        key_name: kite-image-key
-        security_groups: kite-image
+        key_name: kite-test
+        security_groups: kite-test
         auto_ip: yes
         wait: yes
         timeout: 600
@@ -64,9 +64,9 @@
 
   rescue:
     - name: remove tmp image
-      os_image:
-        cloud: psi-openstack
-        name: "tmp-kite-openstack-{{ os }}"
+      openstack.cloud.image:
+        cloud: rhos-01
+        name: "tmp-kite-image-{{ os }}"
         state: absent
 
     - name: "building {{ os }} openstack image fail"
@@ -75,27 +75,27 @@
 
   always:
     - name: remove image test instance
-      os_server:
-        cloud: psi-openstack
+      openstack.cloud.server:
+        cloud: rhos-01
         name: "kite-image-test-{{ os }}"
         state: absent
 
     - name: delete tested tmp image
-      os_image:
-        cloud: psi-openstack
-        name: "tmp-kite-openstack-{{ os }}"
+      openstack.cloud.image:
+        cloud: rhos-01
+        name: "tmp-kite-image-{{ os }}"
         state: absent
 
 - name: "delete last {{ os }} openstack image"
-  os_image:
-    cloud: psi-openstack
-    name: kite-openstack-{{ os }}
+  openstack.cloud.image:
+    cloud: rhos-01
+    name: "kite-image-{{ os }}-{{ arch }}"
     state: absent
 
 - name: "upload new {{ os }} openstack image to psi"
-  os_image:
-    cloud: psi-openstack
-    name: "kite-openstack-{{ os }}"
+  openstack.cloud.image:
+    cloud: rhos-01
+    name: "kite-image-{{ os }}-{{ arch }}"
     filename: "{{ playbook_dir }}/{{ os }}_{{ arch }}.{{ image_type[cloud_platform] }}"
     # https://docs.openstack.org/glance/latest/admin/useful-image-properties.html
     properties:
@@ -103,6 +103,3 @@
       os_distro: rhel
       hw_rng_model: virtio
   register: result_image
-
-- debug:
-    var: result_image

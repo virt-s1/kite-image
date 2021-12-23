@@ -2,14 +2,6 @@
 - set_fact:
     boot_iso: rhel-boot.iso
 
-- set_fact:
-    esxi_guest_id: rhel8_64Guest
-  when: "'rhel-8' in os"
-
-- set_fact:
-    esxi_guest_id: rhel9_64Guest
-  when: "'rhel-9' in os"
-
 # download rhel boot iso if it does not exist
 - name: check rhel boot iso file
   community.vmware.vsphere_file:
@@ -136,7 +128,6 @@
 - name: get uuid and make it a variable
   set_fact:
     hw_uuid: "{{ new_guest.instance.hw_product_uuid  }}"
-    # hw_uuid: "4227bccf-ee6b-ddf6-1773-2b38011089bb"
 
 - name: wait until vm powered-off (installation finished)
   community.vmware.vmware_guest_info:
@@ -170,64 +161,6 @@
         unit_number: 1
         state: absent
 
-- name: start vm to set tools info
-  community.vmware.vmware_guest:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
-    datacenter: "{{ esxi_datacenter }}"
-    uuid: "{{ hw_uuid }}"
-    state: poweredon
-    state_change_timeout: 120
-
-- name: wait for ip _really_ being available
-  community.vmware.vmware_guest_info:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
-    datacenter: "{{ esxi_datacenter }}"
-    uuid: "{{ hw_uuid }}"
-  register: facts
-  until: facts.instance.ipv4 is not none
-  retries: 30
-  delay: 1
-
-- name: get vm tools info
-  community.vmware.vmware_guest_tools_info:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
-    datacenter: "{{ esxi_datacenter }}"
-    uuid: "{{ hw_uuid }}"
-
-- name: stop vm to make template
-  community.vmware.vmware_guest:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
-    datacenter: "{{ esxi_datacenter }}"
-    esxi_hostname: "{{ esxi_host }}"
-    uuid: "{{ hw_uuid }}"
-    state: poweredoff
-    state_change_timeout: 120
-
-- name: wait until vm powered-off
-  community.vmware.vmware_guest_info:
-    hostname: "{{ vsphere_server }}"
-    username: "{{ vsphere_username }}"
-    password: "{{ vsphere_password }}"
-    validate_certs: no
-    datacenter: "{{ esxi_datacenter }}"
-    uuid: "{{ hw_uuid }}"
-  register: facts
-  until: facts.instance.hw_power_status == "poweredOff"
-  retries: 180
-  delay: 10
-
 # template for test
 - name: convert to template
   community.vmware.vmware_guest:
@@ -241,13 +174,14 @@
     name: "{{ esxi_template }}-tmp"
     is_template: yes
 
-- name: get template tools info
-  community.vmware.vmware_guest_tools_info:
+- name: wait for template is available
+  community.vmware.vmware_guest_info:
     hostname: "{{ vsphere_server }}"
     username: "{{ vsphere_username }}"
     password: "{{ vsphere_password }}"
     validate_certs: no
     datacenter: "{{ esxi_datacenter }}"
+    hostname: "{{ esxi_host }}"
     uuid: "{{ hw_uuid }}"
 
 # test template
@@ -262,9 +196,8 @@
         esxi_hostname: "{{ esxi_host }}"
         name: "test-{{ esxi_template }}-tmp"
         folder: ""
-        state: poweredon
+        state: present
         template: "{{ esxi_template }}-tmp"
-        guest_id: "{{ esxi_guest_id }}"
         disk:
           - size_gb: "{{ esxi_disk_gb }}"
             type: thin
@@ -341,7 +274,7 @@
 
     - name: waits until instance is reachable
       wait_for:
-        host: "{{ facts.instance.ipv4 }}"
+        host: "{{ test_guest.instance.ipv4 }}"
         port: 22
         search_regex: OpenSSH
         delay: 10
@@ -349,7 +282,7 @@
 
     - name: add instance to guest group
       add_host:
-        name: "{{ facts.instance.ipv4 }}"
+        name: "{{ test_guest.instance.ipv4 }}"
         group: guest
 
     - name: keep private key permission to 600
@@ -363,13 +296,13 @@
       register: cloud_init_check
       changed_when: false
       until: cloud_init_check is success
-      delegate_to: "{{ facts.instance.ipv4 }}"
+      delegate_to: "{{ test_guest.instance.ipv4 }}"
 
     - name: check /opt/ltp/runltp exist or not
       stat:
         path: /opt/ltp/runltp
       register: result_stat
-      delegate_to: "{{ facts.instance.ipv4 }}"
+      delegate_to: "{{ test_guest.instance.ipv4 }}"
 
     - name: building esxi image fail
       fail:

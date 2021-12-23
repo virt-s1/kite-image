@@ -16,7 +16,7 @@ pipeline {
         }
         stage("build gcp rhel image") {
             steps {
-                withCredentials([string(credentialsId: 'gcp-project', variable: 'GCP_PROJECT'), string(credentialsId: 'gcp-service-account-name', variable: 'GCP_SERVICE_ACCOUNT_NAME'), file(credentialsId: 'gcp-service-account-file', variable: 'GCP_SERVICE_ACCOUNT_FILE'), string(credentialsId: 'gcp-storage-bucket-name', variable: 'GCP_STORAGE_BUCKET_NAME'), string(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASSWORD')]) {
+                withCredentials([string(credentialsId: 'gcp-project', variable: 'GCP_PROJECT'), string(credentialsId: 'gcp-service-account-name', variable: 'GCP_SERVICE_ACCOUNT_NAME'), file(credentialsId: 'gcp-service-account-file', variable: 'GCP_SERVICE_ACCOUNT_FILE'), string(credentialsId: 'gcp-storage-bucket-name', variable: 'GCP_STORAGE_BUCKET_NAME'), file(credentialsId: 'openstack-clouds-yaml', variable: 'OS_CLIENT_CONFIG_FILE')]) {
                     sh label: 'build image', script: """
                         ansible-playbook -v -i inventory -e cloud_platform=gcp build.yaml
                     """

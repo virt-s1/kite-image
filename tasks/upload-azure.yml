@@ -175,9 +175,9 @@
       register: result_growpart
       delegate_to: "{{ instance_ip }}"
 
-    - name: disk growpart not support building gcp image fail
+    - name: disk growpart not support building azure image fail
       fail:
-        msg: "can't find disk growpart support, gcp image {{ os }} {{ arch }} fail"
+        msg: "can't find disk growpart support, azure image {{ os }} {{ arch }} fail"
       when: "'20G' not in result_growpart.stdout"
 
   rescue:

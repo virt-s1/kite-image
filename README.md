@@ -12,7 +12,7 @@ kite-image will build/update images for different cloud platforms weekly.
 
 | Cloud Platform | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.4.z | RHEL 8.5.z | RHEL 8.y | RHEL 9.y |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| VMWare ESXi 7.0 | `template-rhel-8-2-bios`/`template-rhel-8-2-efi` | `template-rhel-8-3-bios`/`template-rhel-8-3-efi` | `template-rhel-8-4-bios`/`template-rhel-8-4-efi` | `template-rhel-8-5-bios`/`template-rhel-8-5-efi` | `template-rhel-8-6-bios`/`template-rhel-8-6-efi` | `template-rhel-9-0-bios`/`template-rhel-9-0-efi` |
+| VMWare ESXi 7.0 | `kite-template-rhel-8-2-bios`/`kite-template-rhel-8-2-efi` | `kite-template-rhel-8-3-bios`/`kite-template-rhel-8-3-efi` | `kite-template-rhel-8-4-bios`/`kite-template-rhel-8-4-efi` | `kite-template-rhel-8-5-bios`/`kite-template-rhel-8-5-efi` | `kite-template-rhel-8-6-bios`/`kite-template-rhel-8-6-efi` | `kite-template-rhel-9-0-bios`/`kite-template-rhel-9-0-efi` |
 | AWS EC2 AMI SSM (x86_64) | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
 | AWS EC2 AMI SSM (ARM64) | `kite-image-rhel-8-2-aarch64` | `kite-image-rhel-8-3-aarch64` | `kite-image-rhel-8-4-aarch64` | `kite-image-rhel-8-5-aarch64` | `kite-image-rhel-8-6-aarch64` | `kite-image-rhel-9-0-aarch64` |
 | Openstack | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |

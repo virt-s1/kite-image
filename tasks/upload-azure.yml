@@ -96,7 +96,7 @@
 - block:
     - name: create VM
       azure.azcollection.azure_rm_virtualmachine:
-        name: kite-image-test-vm
+        name: test-kite-image-{{ os }}-vm
         auth_source: env
         image:
           name: "tmp-kite-image-{{ os }}-{{ arch }}"

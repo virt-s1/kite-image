@@ -15,6 +15,7 @@
       </distroRequires>
       <hostRequires>
         <and>
+          <hypervisor op="=" value=""/>
           <arch op="=" value="aarch64"/>
           <cpu_count op=">=" value="4"/>
           <memory op=">=" value="8000"/>
@@ -23,6 +24,10 @@
           <not><hostname op="like" value="hpe-moonshot%"/></not>
           <not><hostname op="like" value="gigabyte-r270%"/></not>
           <not><hostname op="like" value="gigabyte-r120%"/></not>
+          <not><hostname op="like" value="intel-e5620%"/></not>
+          <not><hostname op="like" value="intel-e31225%"/></not>
+          <not><hostname op="like" value="dell-per630-02.dell2%"/></not>
+          <not><hostname op="like" value="intel-chiefriver-02%"/></not>
         </and>
       </hostRequires>
       <partitions/>

@@ -10,14 +10,14 @@ kite-image will build/update images for different cloud platforms weekly.
 
 **Images**
 
-| Cloud Platform | RHEL 8.2.z | RHEL 8.3.z | RHEL 8.4.z | RHEL 8.5.z | RHEL 8.y | RHEL 9.y |
+| Cloud Platform | RHEL 8.2.z | RHEL 8.4.z | RHEL 8.6.z | RHEL 8.y | RHEL 9.0.z | RHEL 9.y |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| VMWare ESXi 7.0 | `kite-template-rhel-8-2-bios`/`kite-template-rhel-8-2-efi` | `kite-template-rhel-8-3-bios`/`kite-template-rhel-8-3-efi` | `kite-template-rhel-8-4-bios`/`kite-template-rhel-8-4-efi` | `kite-template-rhel-8-5-bios`/`kite-template-rhel-8-5-efi` | `kite-template-rhel-8-6-bios`/`kite-template-rhel-8-6-efi` | `kite-template-rhel-9-0-bios`/`kite-template-rhel-9-0-efi` |
-| AWS EC2 AMI SSM (x86_64) | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
-| AWS EC2 AMI SSM (ARM64) | `kite-image-rhel-8-2-aarch64` | `kite-image-rhel-8-3-aarch64` | `kite-image-rhel-8-4-aarch64` | `kite-image-rhel-8-5-aarch64` | `kite-image-rhel-8-6-aarch64` | `kite-image-rhel-9-0-aarch64` |
-| Openstack | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
-| Google Cloud Platform | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-3-x86-64` | `kite-image-rhel-8-4-x86-64` | `kite-image-rhel-8-5-x86-64` | `kite-image-rhel-8-6-x86-64` | `kite-image-rhel-9-0-x86-64` |
-| Azure | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-3-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-5-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-9-0-x86_64` |
+| VMWare ESXi 7.0 | `kite-template-rhel-8-2-bios`/`kite-template-rhel-8-2-efi` | `kite-template-rhel-8-4-bios`/`kite-template-rhel-8-4-efi` | `kite-template-rhel-8-6-bios`/`kite-template-rhel-8-6-efi` | `kite-template-rhel-8-7-bios`/`kite-template-rhel-8-7-efi` | `kite-template-rhel-9-0-bios`/`kite-template-rhel-9-0-efi` | `kite-template-rhel-9-1-bios`/`kite-template-rhel-9-1-efi` |
+| AWS EC2 AMI SSM (x86_64) | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-8-7-x86_64` | `kite-image-rhel-9-0-x86_64` | `kite-image-rhel-9-1-x86_64` |
+| AWS EC2 AMI SSM (ARM64) | `kite-image-rhel-8-2-aarch64` | `kite-image-rhel-8-4-aarch64` | `kite-image-rhel-8-6-aarch64` | `kite-image-rhel-8-7-aarch64` | `kite-image-rhel-9-0-aarch64` | `kite-image-rhel-9-1-aarch64` |
+| Openstack | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-8-7-x86_64` | `kite-image-rhel-9-0-x86_64` | `kite-image-rhel-9-1-x86_64` |
+| Google Cloud Platform | `kite-image-rhel-8-2-x86-64` | `kite-image-rhel-8-4-x86-64` | `kite-image-rhel-8-6-x86-64` | `kite-image-rhel-8-7-x86-64` | `kite-image-rhel-9-0-x86-64` | `kite-image-rhel-9-1-x86-64` |
+| Azure | `kite-image-rhel-8-2-x86_64` | `kite-image-rhel-8-4-x86_64` | `kite-image-rhel-8-6-x86_64` | `kite-image-rhel-8-7-x86_64` | `kite-image-rhel-9-0-x86_64` | `kite-image-rhel-9-1-x86_64` |
 
 
 ### Image Building
@@ -48,11 +48,11 @@ You can set these environment variables to configure to run kite-image
 
     TEST_OS           The OS to run the tests in. Currently supported values:
                           "rhel-8-2"
-                          "rhel-8-3"
                           "rhel-8-4"
-                          "rhel-8-5"
                           "rhel-8-6"
+                          "rhel-8-7"
                           "rhel-9-0"
+                          "rhel-9-1"
 
     ARCH              Image architecture
                           "x86_64"

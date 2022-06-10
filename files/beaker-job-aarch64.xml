@@ -8,8 +8,8 @@
       <repos/>
       <distroRequires>
         <and>
-          <distro_family op="=" value="Fedora35"/>
-          <distro_name op="=" value="Fedora-35"/>
+          <distro_family op="=" value="Fedora36"/>
+          <distro_name op="=" value="Fedora-36"/>
           <distro_arch op="=" value="aarch64"/>
         </and>
       </distroRequires>

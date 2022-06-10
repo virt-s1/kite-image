@@ -1,4 +1,4 @@
-# Kickstart file to build RHEL-8 Amazon EC2 image
+# Kickstart file to build RHEL-9 Amazon EC2 image
 
 text
 lang en_US.UTF-8
@@ -6,6 +6,7 @@ keyboard us
 timezone --utc UTC
 bootloader --timeout=1 --location=mbr --append="console=ttyS0,115200n8 console=tty0 net.ifnames=0 rd.blacklist=nouveau nvme_core.io_timeout=4294967295"
 auth --enableshadow --passalgo=sha512
+authselect select sssd
 selinux --enforcing
 firewall --enabled --service=ssh
 network --bootproto=dhcp --device=link --activate --onboot=on
@@ -35,7 +36,7 @@ shutdown
 
 
 # Packages
-%packages
+%packages --ignoremissing
 @core
 kernel
 yum-utils
@@ -98,6 +99,7 @@ NetworkManager
 
 # certs for RHUI
 # Disabled for now, RHUI will not be active just yet
+# and it can't be found in baseos and appstream
 # rh-amazon-rhui-client
 
 # Some things from @core we can do without in a minimal install

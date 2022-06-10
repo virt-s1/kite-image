@@ -20,19 +20,14 @@ network --hostname=localhost.localdomain
 firewall --enabled --service=ssh
 
 # additional yum repositories that can be used as sources for package installation
-{% if os == "rhel-8-1" %}
-repo --name="BaseOS" --baseurl={{ repos[os][arch]["eusbaseos"] }} --cost=100
-repo --name="AppStream" --baseurl={{ repos[os][arch]["eusappstream"] }} --cost=100
-{% else %}
 repo --name="BaseOS" --baseurl={{ repos[os][arch]["baseos"] }} --cost=100
 repo --name="AppStream" --baseurl={{ repos[os][arch]["appstream"] }} --cost=100
-{% endif %}
 
 # Root password
 rootpw --iscrypted nothing
 
 # System services
-{% if os == "rhel-8-4" or os == "rhel-8-5" %}
+{% if os == "rhel-8-4" %}
 services --enabled=sshd,waagent,NetworkManager,nm-cloud-setup.service,nm-cloud-setup.timer,cloud-init,cloud-init-local,cloud-config,cloud-final --disabled kdump,rhsmcertd
 {% else %}
 services --enabled=sshd,waagent,NetworkManager,cloud-init,cloud-init-local,cloud-config,cloud-final --disabled kdump,rhsmcertd
@@ -121,7 +116,7 @@ tar
 rsync
 dhcp-client
 NetworkManager
-{% if os == "rhel-8-4" or os == "rhel-8-5" %}
+{% if os == "rhel-8-4" %}
 NetworkManager-cloud-setup
 {% endif %}
 

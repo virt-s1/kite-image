@@ -230,9 +230,7 @@ tar
 rsync
 dhcp-client
 NetworkManager
-{% if os != "rhel-8-1" and os != "rhel-8-0" %}
 NetworkManager-cloud-setup
-{% endif %}
 
 # Some things from @core we can do without in a minimal install
 -biosdevname

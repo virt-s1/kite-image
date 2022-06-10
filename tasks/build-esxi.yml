@@ -33,9 +33,9 @@
   block:
     - name: download rhel-boot iso
       get_url:
-        url: "http://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/RHEL-8.5.0-RC-1.0/compose/BaseOS/x86_64/iso/RHEL-8.5.0-20211013.2-BaseOS-x86_64-boot.iso"
+        url: "https://download-node-02.eng.bos.redhat.com/rhel-8/rel-eng/RHEL-8/RHEL-8.6.0-RC-1.0/compose/BaseOS/x86_64/iso/RHEL-8.6.0-20220420.3-BaseOS-x86_64-boot.iso"
         dest: "{{ playbook_dir }}/{{ boot_iso }}"
-        checksum: "sha256:61fe463758f6ee9b21c4d6698671980829ca4f747a066d556fa0e5eefc45382c"
+        checksum: "sha256:4a3ffcec86ba40c89fc2608c8e3bb00b71d572da219f30904536cdce80b58e76"
         timeout: 5400
       register: download_result
       retries: 3

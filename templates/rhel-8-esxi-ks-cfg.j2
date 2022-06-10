@@ -14,7 +14,7 @@ firewall --enabled --ssh
 selinux --enforcing
 auth --enableshadow --passalgo=sha512
 rootpw --iscrypted nope
-user --name=admin --groups=wheel --iscrypted --password=$6$Rg59Zmow24O14.pd$9F7IIzT0S38XKOG/4yIbt17iRLy3bIlWMvVmxlD72Tg1Uf7MLgv5PWDzoN1zgS.8U5PMn60pw1o69LISplaXU1
+user --name=admin --groups=wheel --iscrypted --password=$6$AhNEMicRajJwcnJX$fn6j239E3x/k3jOXL1QgmCzqjp/wXR6.QU5BPovVK6cq4.fer5veY1FxImpWbdWLMngm0I7YL/OvZ51STNxTj1
 sshkey --username=admin "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMiTGemx2gjWkPCApWZHblN34WaD3cIiuv6zU1S4dtSumR3NeCdUnA9fBgDGyKErIbxtI1XICoLCulv7zPQuUNa/H/iv1yyH2o+5ZuQe8sLtX5bO0nfVdBWSWQu0EMgyaHrPnt642Cby91YLjX8AVkfRPczHkE3mRTJpkYmdeYRPZqNe6+o9A4LVa5/ZNEgzQLs2fXAJlQWP24nueRm8ypdHt0HvZa4wsHELaG7AXlcz3pmg+4I256UG2f5Y99k10CqAYteRtILrR3oXary9pDd4tg9/aCS3T7GYZGi8l5CdZ2LZwHf6pLZM/O9Lf4rjDysyfPw7RZ2uwF0SRpDfUrqrufgEHCLtfADfYg0qf/iulGoLaM3OTI+Jbyra2JXP1tlzyOUUDm1dwABRTcQvujSYrdnJM4M4BHo3ca1U8Fkh/KgjVahfIYH0kx+FjT964lJAJfxU0O3nnsytiEghLk1DuHta6VNuTRehF5gbhNC2Cc6yqbSZ+lp68bU4dRDm0= kite-test"
 
 services --enabled=sshd,NetworkManager,cloud-init,cloud-init-local,cloud-config,cloud-final
@@ -187,9 +187,7 @@ tar
 rsync
 dhcp-client
 NetworkManager
-{% if os != "rhel-8-1" and os != "rhel-8-0" %}
 NetworkManager-cloud-setup
-{% endif %}
 
 # enable rootfs resize on boot
 cloud-utils-growpart

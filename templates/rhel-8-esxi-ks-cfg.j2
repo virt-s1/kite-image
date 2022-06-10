@@ -12,12 +12,11 @@ repo --name="AppStream" --baseurl={{ repos[os][arch]["appstream"] }} --cost=100
 network  --bootproto=dhcp --device=link --activate --onboot=on
 firewall --enabled --ssh
 selinux --enforcing
-auth --enableshadow --passalgo=sha512
-rootpw --iscrypted nope
-user --name=admin --groups=wheel --iscrypted --password=$6$AhNEMicRajJwcnJX$fn6j239E3x/k3jOXL1QgmCzqjp/wXR6.QU5BPovVK6cq4.fer5veY1FxImpWbdWLMngm0I7YL/OvZ51STNxTj1
+rootpw --iscrypted $6$k/JhIWK5xTd15.pB$XzUbzFGzz3JiCpXAlvB2jDWJyKdIClnzhmsj9EuLXMLoEZnm2qxLnXwFOJsOkNrDSjnYWSPno0/vCtszFyYrT1
+user --name=admin --groups=wheel --iscrypted --password=$6$1LgwKw9aOoAi/Zy9$Pn3ErY1E8/yEanJ98evqKEW.DZp24HTuqXPJl6GYCm8uuobAmwxLv7rGCvTRZhxtcYdmC0.XnYRSR9Sh6de3p0
 sshkey --username=admin "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDMiTGemx2gjWkPCApWZHblN34WaD3cIiuv6zU1S4dtSumR3NeCdUnA9fBgDGyKErIbxtI1XICoLCulv7zPQuUNa/H/iv1yyH2o+5ZuQe8sLtX5bO0nfVdBWSWQu0EMgyaHrPnt642Cby91YLjX8AVkfRPczHkE3mRTJpkYmdeYRPZqNe6+o9A4LVa5/ZNEgzQLs2fXAJlQWP24nueRm8ypdHt0HvZa4wsHELaG7AXlcz3pmg+4I256UG2f5Y99k10CqAYteRtILrR3oXary9pDd4tg9/aCS3T7GYZGi8l5CdZ2LZwHf6pLZM/O9Lf4rjDysyfPw7RZ2uwF0SRpDfUrqrufgEHCLtfADfYg0qf/iulGoLaM3OTI+Jbyra2JXP1tlzyOUUDm1dwABRTcQvujSYrdnJM4M4BHo3ca1U8Fkh/KgjVahfIYH0kx+FjT964lJAJfxU0O3nnsytiEghLk1DuHta6VNuTRehF5gbhNC2Cc6yqbSZ+lp68bU4dRDm0= kite-test"
 
-services --enabled=sshd,NetworkManager,cloud-init,cloud-init-local,cloud-config,cloud-final
+services --enabled=sshd,NetworkManager
 
 bootloader --location=mbr --append="console=ttyS0,115200n8 net.ifnames=0 biosdevname=0"
 zerombr
@@ -27,10 +26,6 @@ autopart --type=lvm --fstype=xfs
 shutdown
 
 %post --log=/var/log/anaconda/post-install.log --erroronfail
-# workaround anaconda requirements
-passwd -d root
-passwd -l root
-
 # set environment variable to mark cloud platform
 cat > /etc/profile.d/platform.sh << EOF
 export PLATFORM="esxi"
@@ -59,13 +54,6 @@ echo .
 # Remove firewalld; it is required to be present for install/image building.
 echo "Removing firewalld."
 yum -C -y --noplugins remove firewalld --setopt="clean_requirements_on_remove=1"
-
-echo -n "Getty fixes"
-# although we want console output going to the serial console, we don't
-# actually have the opportunity to login there. FIX.
-# we don't really need to auto-spawn _any_ gettys.
-sed -i '/^#NAutoVTs=.*/ a\
-NAutoVTs=0' /etc/systemd/logind.conf
 
 echo -n "Network fixes"
 # initscripts don't like this file to be missing.
@@ -107,18 +95,7 @@ UPDATEDEFAULT=yes
 DEFAULTKERNEL=kernel
 EOL
 
-# make sure firstboot doesn't start
-echo "RUN_FIRSTBOOT=NO" > /etc/sysconfig/firstboot
-
-# workaround https://bugzilla.redhat.com/show_bug.cgi?id=966888
-if ! grep -q growpart /etc/cloud/cloud.cfg; then
-  sed -i 's/ - resizefs/ - growpart\n - resizefs/' /etc/cloud/cloud.cfg
-fi
-
-# tell cloud-init to create the ec2-user account
-sed -i 's/cloud-user/admin/' /etc/cloud/cloud.cfg
-
-# allow sudo powers to ec2-user
+# allow sudo powers to admin
 echo -e 'admin\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
 
 # Disable subscription-manager yum plugins
@@ -164,14 +141,6 @@ open-vm-tools
 redhat-release
 redhat-release-eula
 
-# cloud-init does magical things with EC2 metadata, including provisioning
-# a user account with ssh keys.
-cloud-init
-
-# need this for growpart, because parted doesn't yet support resizepart
-# https://bugzilla.redhat.com/show_bug.cgi?id=966993
-#cloud-utils
-
 # We need this image to be portable; also, rescue mode isn't useful here.
 dracut-config-generic
 dracut-norescue
@@ -187,11 +156,6 @@ tar
 rsync
 dhcp-client
 NetworkManager
-NetworkManager-cloud-setup
-
-# enable rootfs resize on boot
-cloud-utils-growpart
-gdisk
 
 # add insight-clients
 insights-client

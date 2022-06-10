@@ -192,7 +192,7 @@
   register: facts
   until: facts.instance.ipv4 is not none
   retries: 30
-  delay: 1
+  delay: 5
 
 - name: get vm tools info
   community.vmware.vmware_guest_tools_info:
@@ -302,7 +302,7 @@
           register: facts
           until: facts.instance.ipv4 is not none
           retries: 30
-          delay: 1
+          delay: 5
       rescue:
         - name: poweroff guest
           community.vmware.vmware_guest:
@@ -337,7 +337,7 @@
           register: facts
           until: facts.instance.ipv4 is not none
           retries: 30
-          delay: 1
+          delay: 5
 
     - name: waits until instance is reachable
       wait_for:
@@ -356,14 +356,6 @@
       file:
         path: "{{ playbook_dir }}/key/identity"
         mode: "0600"
-
-    - name: ensure cloud-init has finished
-      raw: test -f /var/lib/cloud/instance/boot-finished
-      retries: 60
-      register: cloud_init_check
-      changed_when: false
-      until: cloud_init_check is success
-      delegate_to: "{{ facts.instance.ipv4 }}"
 
     - name: check /opt/ltp/runltp exist or not
       stat:
